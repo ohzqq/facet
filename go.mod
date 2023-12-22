@@ -11,6 +11,7 @@ require (
 	github.com/ohzqq/cdb v0.0.111 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/samber/lo v1.39.0 // indirect
+	github.com/spf13/cast v1.6.0 // indirect
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
