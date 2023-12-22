@@ -1,5 +1,7 @@
 package facet
 
+import "github.com/samber/lo"
+
 type Index struct {
 	Name   string
 	PK     string
@@ -33,8 +35,13 @@ func (idx *Index) SetFacets(facets []string) *Index {
 	return idx
 }
 
-func (idx *Index) processFacets() *Index {
+func (idx *Index) ProcessFacets() *Index {
 	for _, f := range idx.Facets {
+		var vals [][]any
+		for _, b := range idx.Data {
+			vals = append(vals, b[f].([]any))
+		}
+		idx.facets[f] = lo.Uniq(lo.Flatten(vals))
 	}
 	return idx
 }

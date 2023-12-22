@@ -15,6 +15,11 @@ func TestNewIndex(t *testing.T) {
 	fmt.Printf("%v\n", idx.Name)
 }
 
+func TestProcessFacets(t *testing.T) {
+	idx = idx.ProcessFacets()
+	fmt.Printf("%v\n", idx.facets["tags"])
+}
+
 func TestData(t *testing.T) {
 	books := loadData(t)
 	println(len(books))
