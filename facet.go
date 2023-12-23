@@ -11,8 +11,6 @@ type Facet struct {
 	terms url.Values
 }
 
-type facet map[string][]string
-
 func NewFacet(name string, pk string, data []map[string]any) url.Values {
 	facet := make(url.Values)
 	for _, item := range data {

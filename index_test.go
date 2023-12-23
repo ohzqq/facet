@@ -1,9 +1,7 @@
 package facet
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/samber/lo"
@@ -33,22 +31,16 @@ func TestProcessFacets(t *testing.T) {
 	//terms := idx.FacetMap()
 }
 
+func TestConjQuery(t *testing.T) {
+	abo := idx.GetFacetTermItems("tags", "abo")
+	dnr := idx.GetFacetTermItems("tags", "dnr")
+	fmt.Printf("abo %v\n", len(abo))
+	fmt.Printf("dnr %v\n", len(dnr))
+	or := lo.Union(abo, dnr)
+	fmt.Println(len(or))
+}
+
 func TestData(t *testing.T) {
 	books := loadData(t)
 	println(len(books))
-}
-
-func loadData(t *testing.T) []map[string]any {
-	d, err := os.ReadFile("testdata/audiobooks.json")
-	if err != nil {
-		t.Error(err)
-	}
-
-	var books []map[string]any
-	err = json.Unmarshal(d, &books)
-	if err != nil {
-		t.Error(err)
-	}
-
-	return books
 }
