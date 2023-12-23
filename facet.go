@@ -3,6 +3,7 @@ package facet
 import (
 	"net/url"
 
+	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
@@ -21,6 +22,16 @@ func NewFacet(name string, pk string, data []map[string]any) url.Values {
 		}
 	}
 	return facet
+}
+
+func CollectTerms(facet string, data []map[string]any) []string {
+	var terms [][]string
+	for _, item := range data {
+		if t, ok := item[facet]; ok {
+			terms = append(terms, cast.ToStringSlice(t))
+		}
+	}
+	return lo.Uniq(lo.Flatten(terms))
 }
 
 func (f *Facet) AddTerm(term string, ids ...string) *Facet {

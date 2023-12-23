@@ -5,37 +5,41 @@ package facet
 import (
 	"fmt"
 	"testing"
-
-	"github.com/kelindar/column"
 )
 
-var col *Idx
+var col *Col
 
 func TestNewCol(t *testing.T) {
 	books := loadData(t)
-	col, err := NewCol("id", []string{"authors", "tags"}, books)
-	if err != nil {
-		t.Error(err)
-	}
+	//col, err := NewColz("id", []string{"authors", "tags"}, books)
+	//if err != nil {
+	//t.Error(err)
+	//}
 
-	fmt.Println(col.Count())
+	tags := NewCol("tags", "id")
+	terms := CollectTerms("tags", books)
+	//println(len(terms))
 
-	col.Query(func(txn *column.Txn) error {
-		count := txn.WithValue("tags", func(v interface{}) bool {
-			return v == "abo"
-		}).Count()
-		println(count)
-		return nil
-	})
+	tags.SetCols(terms)
+
+	fmt.Println(tags.Count())
+
+	//col.Query(func(txn *column.Txn) error {
+	//count := txn.WithValue("tags", func(v interface{}) bool {
+	//return v == "abo"
+	//}).Count()
+	//println(count)
+	//return nil
+	//})
 
 	// How many rogues and mages?
-	col.Query(func(txn *column.Txn) error {
-		c := txn.With("abo").Union("dnr").Count()
-		println(c)
-		return nil
-	})
+	//col.Query(func(txn *column.Txn) error {
+	//c := txn.With("abo").Union("dnr").Count()
+	//println(c)
+	//return nil
+	//})
 
-	err = col.Close()
+	err := tags.Close()
 	if err != nil {
 		t.Error(err)
 	}

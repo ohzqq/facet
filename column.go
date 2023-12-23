@@ -1,3 +1,5 @@
+//go:build exclude
+
 package facet
 
 import (
@@ -5,13 +7,30 @@ import (
 	"github.com/spf13/cast"
 )
 
-type Idx struct {
+type Col struct {
 	*column.Collection
-	pk string
+	pk   string
+	name string
 }
 
-func NewCol(pk string, cols []string, data []map[string]any, opts ...column.Options) (*Idx, error) {
-	idx := &Idx{
+func NewCol(name, pk string, opts ...column.Options) *Col {
+	idx := &Col{
+		Collection: column.NewCollection(opts...),
+		name:       name,
+		pk:         pk,
+	}
+	return idx
+}
+
+func (c *Col) SetCols(cols []string) *Col {
+	for _, col := range cols {
+		c.CreateColumn(col, column.ForBool())
+	}
+	return c
+}
+
+func NewColz(pk string, cols []string, data []map[string]any, opts ...column.Options) (*Col, error) {
+	idx := &Col{
 		Collection: column.NewCollection(opts...),
 		pk:         pk,
 	}
