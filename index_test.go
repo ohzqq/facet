@@ -31,7 +31,6 @@ func TestProcessFacets(t *testing.T) {
 	}
 
 	//terms := idx.FacetMap()
-	fmt.Printf("%v\n", idx.GetFacetValues("tags"))
 }
 
 func TestData(t *testing.T) {

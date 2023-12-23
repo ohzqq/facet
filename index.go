@@ -53,6 +53,14 @@ func (idx *Index) GetFacetValues(name string) []string {
 	return maps.Keys(idx.GetFacet(name))
 }
 
+func (idx *Index) GetFacetTermItems(facet, term string) []string {
+	f := idx.GetFacet(facet)
+	if f.Has(term) {
+		return f[term]
+	}
+	return []string{}
+}
+
 func (idx *Index) SetPK(pk string) *Index {
 	idx.PK = pk
 	return idx
