@@ -1,21 +1,28 @@
 package facet
 
+import (
+	"net/url"
+
+	"github.com/spf13/cast"
+)
+
 type Facet struct {
 	Name  string
-	Terms []*Term
-	terms map[string][]string
+	terms url.Values
 }
 
-type Term struct {
-	Value     any
-	BelongsTo []string
-}
+type facet map[string][]string
 
-func NewFacet(name string) *Facet {
-	return &Facet{
-		Name:  name,
-		terms: make(map[string][]string),
+func NewFacet(name string, pk string, data []map[string]any) url.Values {
+	facet := make(url.Values)
+	for _, item := range data {
+		if terms, ok := item[name]; ok {
+			for _, term := range terms.([]any) {
+				facet.Add(cast.ToString(term), cast.ToString(item[pk]))
+			}
+		}
 	}
+	return facet
 }
 
 func (f *Facet) AddTerm(term string, ids ...string) *Facet {
@@ -24,15 +31,4 @@ func (f *Facet) AddTerm(term string, ids ...string) *Facet {
 	}
 	f.terms[term] = append(f.terms[term], ids...)
 	return f
-}
-
-func NewTerm(v any) *Term {
-	return &Term{
-		Value: v,
-	}
-}
-
-func (t *Term) Belongs(id ...string) *Term {
-	t.BelongsTo = append(t.BelongsTo, id...)
-	return t
 }

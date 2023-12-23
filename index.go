@@ -1,8 +1,11 @@
 package facet
 
 import (
+	"net/url"
+
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
+	"golang.org/x/exp/maps"
 )
 
 type Index struct {
@@ -10,74 +13,45 @@ type Index struct {
 	PK     string
 	Data   []map[string]any
 	items  []string
-	Facets []string
-	facets map[string]*Facet
+	facets []string
+	Facets map[string]url.Values
 }
 
-func New(name string, facets []string, data ...map[string]any) *Index {
+func New(name string, facets []string, data []map[string]any, pk ...string) *Index {
 	idx := &Index{
 		Name:   name,
 		Data:   data,
 		PK:     "id",
-		Facets: facets,
-		items:  make([]string, len(data)),
-		facets: make(map[string]*Facet),
+		facets: facets,
+		Facets: make(map[string]url.Values),
 	}
+	if len(pk) > 0 {
+		idx.PK = pk[0]
+	}
+	idx.items = CollectIDs(idx.PK, data)
 	for _, f := range facets {
-		idx.facets[f] = NewFacet(f)
+		idx.Facets[f] = NewFacet(f, idx.PK, data)
 	}
 	return idx
 }
 
-func (idx *Index) getIDs() []string {
+func CollectIDs(pk string, data []map[string]any) []string {
 	iter := func(item map[string]any, _ int) string {
-		return cast.ToString(item[idx.PK])
+		return cast.ToString(item[pk])
 	}
-	return lo.Map(idx.Data, iter)
+	return lo.Map(data, iter)
 }
 
-func getTerms(data []map[string]any, term string) map[string]any {
-	trans := func(item map[string]any) (string, any) {
-		if t, ok := item[term]; ok {
-		}
-		return "", nil
-	}
-}
-
-func (idx *Index) processData() *Index {
-	for i, item := range idx.Data {
-		idx.items[i] = cast.ToString(item[idx.PK])
-		for _, f := range idx.Facets {
-			facet := idx.GetFacet(f)
-			if terms, ok := item[f]; ok {
-				for _, term := range terms.([]any) {
-					t := cast.ToString(term)
-					facet.AddTerm(t, cast.ToString(item[idx.PK]))
-				}
-			}
-		}
-	}
-	return idx
-}
-
-func (idx *Index) GetFacet(name string) *Facet {
-	if f, ok := idx.facets[name]; ok {
+func (idx *Index) GetFacet(name string) url.Values {
+	if f, ok := idx.Facets[name]; ok {
 		return f
 	}
-	idx.facets[name] = NewFacet(name)
-	return idx.facets[name]
+	return url.Values{}
 }
 
-//func (idx *Index) ProcessFacets() *Index {
-//  for _, f := range idx.Facets {
-//    var vals [][]any
-//    for _, b := range idx.Data {
-//      vals = append(vals, b[f].([]any))
-//    }
-//    idx.facets[f] = lo.Uniq(lo.Flatten(vals))
-//  }
-//  return idx
-//}
+func (idx *Index) GetFacetValues(name string) []string {
+	return maps.Keys(idx.GetFacet(name))
+}
 
 func (idx *Index) SetPK(pk string) *Index {
 	idx.PK = pk
@@ -90,6 +64,6 @@ func (idx *Index) SetData(data []map[string]any) *Index {
 }
 
 func (idx *Index) SetFacets(facets []string) *Index {
-	idx.Facets = facets
+	idx.facets = facets
 	return idx
 }
