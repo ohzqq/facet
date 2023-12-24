@@ -3,6 +3,7 @@
 package facet
 
 import (
+	"github.com/kelindar/bitmap"
 	"github.com/kelindar/column"
 	"github.com/spf13/cast"
 )
@@ -11,6 +12,23 @@ type Col struct {
 	*column.Collection
 	pk   string
 	name string
+}
+
+type Row struct {
+	Name string
+	data bitmap.Bitmap
+}
+
+func NewBitmap(name string, ids ...int) *Row {
+	var data bitmap.Bitmap
+	for _, id := range ids {
+		data.Set(id)
+	}
+
+	return &Row{
+		Name: name,
+		data: bits,
+	}
 }
 
 func NewCol(name, pk string, opts ...column.Options) *Col {

@@ -2,9 +2,25 @@ package facet
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"testing"
 )
+
+func init() {
+	d, err := os.ReadFile("testdata/audiobooks.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var res []map[string]any
+	err = json.Unmarshal(d, &res)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	books = res
+}
 
 func loadData(t *testing.T) []map[string]any {
 	d, err := os.ReadFile("testdata/audiobooks.json")
@@ -17,6 +33,8 @@ func loadData(t *testing.T) []map[string]any {
 	if err != nil {
 		t.Error(err)
 	}
+
+	books = books
 
 	return books
 }

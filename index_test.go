@@ -37,7 +37,11 @@ func TestConjQuery(t *testing.T) {
 	fmt.Printf("abo %v\n", len(abo))
 	fmt.Printf("dnr %v\n", len(dnr))
 	or := lo.Union(abo, dnr)
-	fmt.Println(len(or))
+
+	books := idx.GetByID(or)
+	if len(or) != len(books) {
+		t.Errorf("got %d books expected %d\n", len(books), len(or))
+	}
 }
 
 func TestData(t *testing.T) {

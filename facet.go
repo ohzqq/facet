@@ -24,6 +24,9 @@ func NewFacet(name string, pk string, data []map[string]any) url.Values {
 	return facet
 }
 
+//func Intersect(vals url.Values, vals ...string) (url.Values, []string) {
+//}
+
 func CollectTerms(facet string, data []map[string]any) []string {
 	var terms [][]string
 	for _, item := range data {

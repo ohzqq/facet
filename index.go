@@ -13,7 +13,6 @@ type Index struct {
 	PK     string
 	Data   []map[string]any
 	items  []string
-	facets []string
 	Facets map[string]url.Values
 }
 
@@ -22,7 +21,6 @@ func New(name string, facets []string, data []map[string]any, pk ...string) *Ind
 		Name:   name,
 		Data:   data,
 		PK:     "id",
-		facets: facets,
 		Facets: make(map[string]url.Values),
 	}
 	if len(pk) > 0 {
@@ -33,6 +31,16 @@ func New(name string, facets []string, data []map[string]any, pk ...string) *Ind
 		idx.Facets[f] = NewFacet(f, idx.PK, data)
 	}
 	return idx
+}
+
+func (idx *Index) GetByID(ids []string) []map[string]any {
+	var data []map[string]any
+	for _, item := range idx.Data {
+		if lo.Contains(ids, cast.ToString(item[idx.PK])) {
+			data = append(data, item)
+		}
+	}
+	return data
 }
 
 func CollectIDs(pk string, data []map[string]any) []string {
@@ -68,10 +76,5 @@ func (idx *Index) SetPK(pk string) *Index {
 
 func (idx *Index) SetData(data []map[string]any) *Index {
 	idx.Data = data
-	return idx
-}
-
-func (idx *Index) SetFacets(facets []string) *Index {
-	idx.facets = facets
 	return idx
 }
