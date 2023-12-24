@@ -29,7 +29,7 @@ func New(name string, facets []string, data []map[string]any, pk ...string) *Ind
 	}
 	idx.items = CollectIDs(idx.PK, data)
 	for _, f := range facets {
-		idx.Facets[f] = NewFacet(f, idx.PK, data)
+		idx.Facets[f] = NewFacetVals(f, idx.PK, data)
 	}
 	return idx
 }
@@ -49,6 +49,31 @@ func (idx *Index) GetByID(ids []string) []map[string]any {
 		}
 	}
 	return data
+}
+
+func Filter(idx *Index, facet string, op string, filters []string, ids ...any) (*Index, string, string, []string) {
+	//agg := idx.GetFacet(facet)
+	bitIDs := idx.Bitmap(ids...)
+	f := lo.Slice(filters, 0, 1)
+	if len(f) > 0 {
+		term := idx.GetTerm(facet, f[0])
+		switch op {
+		case "and":
+			bitIDs.And(term.Bitmap())
+		case "or":
+			bitIDs.Or(term.Bitmap())
+		}
+		var rest []map[string]any
+		for _, item := range idx.Data {
+			if bitIDs.Contains(cast.ToUint32(item[idx.PK])) {
+				rest = append(rest, item)
+			}
+		}
+		idx.Data = rest
+		return Filter(idx, facet, op, filters[0:])
+	}
+
+	return idx, facet, op, filters
 }
 
 func CollectIDsInt(pk string, data []map[string]any) []uint32 {

@@ -10,6 +10,7 @@ import (
 
 type Facet struct {
 	Name  string
+	Terms map[string]*Term
 	terms url.Values
 }
 
@@ -19,7 +20,13 @@ type Term struct {
 	items []string
 }
 
-func NewFacet(name string, pk string, data []map[string]any) url.Values {
+func NewFacet(name string) *Facet {
+	return &Facet{
+		Name: name,
+	}
+}
+
+func NewFacetVals(name string, pk string, data []map[string]any) url.Values {
 	facet := make(url.Values)
 	for _, item := range data {
 		if terms, ok := item[name]; ok {
@@ -34,7 +41,7 @@ func NewFacet(name string, pk string, data []map[string]any) url.Values {
 //func Intersect(vals url.Values, vals ...string) (url.Values, []string) {
 //}
 
-func CollectTerms(facet string, data []map[string]any) []string {
+func CollectTerms(data []map[string]any, facet string) []string {
 	var terms [][]string
 	for _, item := range data {
 		if t, ok := item[facet]; ok {
@@ -44,11 +51,14 @@ func CollectTerms(facet string, data []map[string]any) []string {
 	return lo.Uniq(lo.Flatten(terms))
 }
 
-func (f *Facet) AddTerm(term string, ids ...string) *Facet {
-	if _, ok := f.terms[term]; !ok {
-		f.terms[term] = []string{}
+func (f *Facet) AddTerm(term string, ids ...any) *Facet {
+	if _, ok := f.Terms[term]; !ok {
+		f.Terms[term] = &Term{}
 	}
-	f.terms[term] = append(f.terms[term], ids...)
+	t := &Term{
+		Value: term,
+	}
+	f.Terms[term] = t
 	return f
 }
 
