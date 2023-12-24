@@ -1,5 +1,3 @@
-//go:build exclude
-
 package facet
 
 import (
@@ -19,16 +17,24 @@ type Row struct {
 	data bitmap.Bitmap
 }
 
-func NewBitmap(name string, ids ...int) *Row {
-	var data bitmap.Bitmap
+func NewRow(name string, ids []uint32) *Row {
+	var bits bitmap.Bitmap
 	for _, id := range ids {
-		data.Set(id)
+		bits.Set(id)
 	}
 
 	return &Row{
 		Name: name,
 		data: bits,
 	}
+}
+
+func NewBitmap(ids []any) bitmap.Bitmap {
+	var bits bitmap.Bitmap
+	for _, id := range ids {
+		bits.Set(cast.ToUint32(id))
+	}
+	return bits
 }
 
 func NewCol(name, pk string, opts ...column.Options) *Col {

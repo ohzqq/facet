@@ -9,6 +9,10 @@ import (
 
 var idx *Index
 
+func init() {
+	idx = New("audiobooks", []string{"tags", "authors", "narrators"}, books)
+}
+
 func TestNewIndex(t *testing.T) {
 	books := loadData(t)
 	idx = New("audiobooks", []string{"tags", "authors", "narrators"}, books)

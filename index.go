@@ -3,6 +3,7 @@ package facet
 import (
 	"net/url"
 
+	"github.com/kelindar/bitmap"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 	"golang.org/x/exp/maps"
@@ -33,6 +34,13 @@ func New(name string, facets []string, data []map[string]any, pk ...string) *Ind
 	return idx
 }
 
+func (idx *Index) Bitmap(ids ...any) bitmap.Bitmap {
+	if len(ids) > 0 {
+		return NewBitmap(ids)
+	}
+	return NewBitmap(lo.ToAnySlice(idx.items))
+}
+
 func (idx *Index) GetByID(ids []string) []map[string]any {
 	var data []map[string]any
 	for _, item := range idx.Data {
@@ -41,6 +49,13 @@ func (idx *Index) GetByID(ids []string) []map[string]any {
 		}
 	}
 	return data
+}
+
+func CollectIDsInt(pk string, data []map[string]any) []uint32 {
+	iter := func(item map[string]any, _ int) uint32 {
+		return cast.ToUint32(item[pk])
+	}
+	return lo.Map(data, iter)
 }
 
 func CollectIDs(pk string, data []map[string]any) []string {
@@ -55,6 +70,19 @@ func (idx *Index) GetFacet(name string) url.Values {
 		return f
 	}
 	return url.Values{}
+}
+
+func (idx *Index) GetTerm(facet, term string) *Term {
+	for _, t := range idx.GetTerms(facet) {
+		if t.Value == term {
+			return t
+		}
+	}
+	return &Term{Value: term}
+}
+
+func (idx *Index) GetTerms(name string) []*Term {
+	return GetFacetTerms(idx.GetFacet(name))
 }
 
 func (idx *Index) GetFacetValues(name string) []string {
