@@ -7,6 +7,10 @@ import (
 	"testing"
 )
 
+var books []map[string]any
+
+const numBooks = 7174
+
 func init() {
 	d, err := os.ReadFile("testdata/audiobooks.json")
 	if err != nil {

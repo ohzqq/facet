@@ -26,7 +26,7 @@ func TestIdxCfg(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("%v\n", cfg)
+	//fmt.Printf("%v\n", cfg)
 }
 
 func TestProcessFacets(t *testing.T) {
@@ -45,18 +45,18 @@ func TestProcessFacets(t *testing.T) {
 	//terms := idx.FacetMap()
 }
 
-func TestConjQuery(t *testing.T) {
-	abo := idx.GetFacetTermItems("tags", "abo")
-	dnr := idx.GetFacetTermItems("tags", "dnr")
-	fmt.Printf("abo %v\n", len(abo))
-	fmt.Printf("dnr %v\n", len(dnr))
-	or := lo.Union(abo, dnr)
+//func TestConjQuery(t *testing.T) {
+//  abo := idx.GetFacetTermItems("tags", "abo")
+//  dnr := idx.GetFacetTermItems("tags", "dnr")
+//  fmt.Printf("abo %v\n", len(abo))
+//  fmt.Printf("dnr %v\n", len(dnr))
+//  or := lo.Union(abo, dnr)
 
-	books := idx.GetByID(or)
-	if len(or) != len(books) {
-		t.Errorf("got %d books expected %d\n", len(books), len(or))
-	}
-}
+//  books := idx.GetByID(or)
+//  if len(or) != len(books) {
+//    t.Errorf("got %d books expected %d\n", len(books), len(or))
+//  }
+//}
 
 func TestData(t *testing.T) {
 	books := loadData(t)

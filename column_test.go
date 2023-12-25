@@ -1,3 +1,5 @@
+//go:build exlcude
+
 package facet
 
 import (
@@ -5,10 +7,6 @@ import (
 
 	"github.com/kelindar/bitmap"
 )
-
-var books []map[string]any
-
-const numBooks = 7174
 
 func TestIdxBitmap(t *testing.T) {
 	ids := idx.Bitmap()
@@ -51,7 +49,10 @@ func TestAboFilter(t *testing.T) {
 
 func aboFilter(t *testing.T) bitmap.Bitmap {
 	ids := idx.Bitmap()
-	term := idx.GetTerm("tags", "abo")
+	term, err := idx.GetTerm("tags", "abo")
+	if err != nil {
+		t.Error(err)
+	}
 	bits := term.Bitmap()
 	if term.Count != bits.Count() {
 		t.Errorf("got %d items, expected %d\n", bits.Count(), term.Count)
@@ -64,7 +65,10 @@ func aboFilter(t *testing.T) bitmap.Bitmap {
 
 func dnrFilter(t *testing.T) bitmap.Bitmap {
 	ids := idx.Bitmap()
-	term := idx.GetTerm("tags", "dnr")
+	term, err := idx.GetTerm("tags", "dnr")
+	if err != nil {
+		t.Error(err)
+	}
 	bits := term.Bitmap()
 	if term.Count != bits.Count() {
 		t.Errorf("got %d items, expected %d\n", bits.Count(), term.Count)

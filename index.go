@@ -2,7 +2,6 @@ package facet
 
 import (
 	"errors"
-	"log"
 	"net/url"
 	"strconv"
 
@@ -54,7 +53,10 @@ func (idx *Index) Filter(q url.Values) []string {
 	for name, filters := range q {
 		if facet, ok := idx.FacetCfg[name]; ok {
 			for _, filter := range filters {
-				term := idx.GetTerm(name, filter)
+				term, err := idx.GetTerm(name, filter)
+				if err != nil {
+					return nil
+				}
 				b := term.Bitmap()
 				bits = append(bits, b)
 				switch facet.Operator {
@@ -142,7 +144,10 @@ func Filter(idx *Index, facet string, op string, filters []string, ids ...any) (
 	bitIDs := idx.Bitmap(ids...)
 	f := lo.Slice(filters, 0, 1)
 	if len(f) > 0 {
-		term := idx.GetTerm(facet, f[0])
+		term, err := idx.GetTerm(facet, f[0])
+		if err != nil {
+			return nil, "", "", nil
+		}
 		switch op {
 		case "and":
 			bitIDs.And(term.Bitmap())
@@ -190,13 +195,13 @@ func (idx *Index) GetFacet(name string) (*Facet, error) {
 	return &Facet{}, errors.New("no such facet")
 }
 
-func (idx *Index) GetTerm(facet, term string) *Term {
+func (idx *Index) GetTerm(facet, term string) (*Term, error) {
 	f, err := idx.GetFacet(facet)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return f.GetTerm(term)
+	return f.GetTerm(term), nil
 }
 
 func (idx *Index) SetPK(pk string) *Index {
