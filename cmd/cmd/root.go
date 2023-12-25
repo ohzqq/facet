@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"github.com/ohzqq/facet"
@@ -45,7 +46,19 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%#V\n", idx.Facets()["tags"])
+		idx.Facets()
+
+		filters := make(url.Values)
+		filters.Add("authors", "Alice Winters")
+		//filters.Add("tags", "abo")
+
+		ids := idx.Filter(filters)
+		fmt.Printf("%#V\n", len(ids))
+		//d, err = json.Marshal(facets)
+		//if err != nil {
+		//log.Fatal(err)
+		//}
+		//println(string(d))
 	},
 }
 

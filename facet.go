@@ -30,6 +30,13 @@ func NewFacet(name string) *Facet {
 	}
 }
 
+func (f *Facet) GetTerm(term string) *Term {
+	if t, ok := f.Terms[term]; ok {
+		return t
+	}
+	return &Term{Value: term}
+}
+
 func CollectFacetValues(name string, pk string, data []map[string]any) url.Values {
 	facet := make(url.Values)
 	for _, item := range data {

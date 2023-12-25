@@ -1,18 +1,20 @@
 package facet
 
 import (
+	"errors"
+	"log"
 	"net/url"
+	"strconv"
 
 	"github.com/kelindar/bitmap"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
-	"golang.org/x/exp/maps"
 )
 
 type Index struct {
 	Name     string                `json:"name"`
 	Key      string                `json:"key"`
-	Data     []map[string]any      `json:"data"`
+	Data     []map[string]any      `json:"-"`
 	items    []string              `json:"-"`
 	facets   map[string]url.Values `json:"-"`
 	FacetCfg map[string]*Facet     `json:"facets"`
@@ -41,6 +43,70 @@ func (idx *Index) Facets() map[string]*Facet {
 	//facets := make(map[string]url.Values)
 	idx.CollectTerms()
 	return idx.FacetCfg
+}
+
+func (idx *Index) Filter(q url.Values) []string {
+	og := CollectAnyIDs(idx.Key, idx.Data)
+	items := NewBitmap(og)
+
+	var op string
+	var bits []bitmap.Bitmap
+	for name, filters := range q {
+		if facet, ok := idx.FacetCfg[name]; ok {
+			for _, filter := range filters {
+				term := idx.GetTerm(name, filter)
+				b := term.Bitmap()
+				bits = append(bits, b)
+				switch facet.Operator {
+				case "or":
+					op = "or"
+				case "and":
+					op = "and"
+				}
+			}
+		}
+	}
+
+	switch len(bits) {
+	case 0:
+	case 1:
+		switch op {
+		case "or":
+			items.Or(bits[0])
+		case "and":
+			items.And(bits[0])
+		}
+	default:
+		switch op {
+		case "or":
+			items.Or(bits[0], bits[1:]...)
+		case "and":
+			items.And(bits[0], bits[1:]...)
+		}
+	}
+
+	var ids []string
+	items.Range(func(x uint32) {
+		id := strconv.Itoa(int(x))
+		ids = append(ids, id)
+	})
+	return ids
+}
+
+func or(bits ...bitmap.Bitmap) []bitmap.Bitmap {
+	if len(bits) < 2 {
+		return bits
+	}
+	bits[0].Or(bits[1])
+	return bits[2:]
+}
+
+func and(bits ...bitmap.Bitmap) []bitmap.Bitmap {
+	if len(bits) < 2 {
+		return bits
+	}
+	bits[0].And(bits[1])
+	return bits[2:]
 }
 
 func (idx *Index) CollectTerms() {
@@ -103,6 +169,13 @@ func CollectIDsInt(pk string, data []map[string]any) []uint32 {
 	return lo.Map(data, iter)
 }
 
+func CollectAnyIDs(pk string, data []map[string]any) []any {
+	iter := func(item map[string]any, _ int) any {
+		return item[pk]
+	}
+	return lo.Map(data, iter)
+}
+
 func CollectIDs(pk string, data []map[string]any) []string {
 	iter := func(item map[string]any, _ int) string {
 		return cast.ToString(item[pk])
@@ -110,36 +183,20 @@ func CollectIDs(pk string, data []map[string]any) []string {
 	return lo.Map(data, iter)
 }
 
-func (idx *Index) GetFacet(name string) url.Values {
-	if f, ok := idx.facets[name]; ok {
-		return f
+func (idx *Index) GetFacet(name string) (*Facet, error) {
+	if f, ok := idx.FacetCfg[name]; ok {
+		return f, nil
 	}
-	return url.Values{}
+	return &Facet{}, errors.New("no such facet")
 }
 
 func (idx *Index) GetTerm(facet, term string) *Term {
-	for _, t := range idx.GetTerms(facet) {
-		if t.Value == term {
-			return t
-		}
+	f, err := idx.GetFacet(facet)
+	if err != nil {
+		log.Fatal(err)
 	}
-	return &Term{Value: term}
-}
 
-func (idx *Index) GetTerms(name string) []*Term {
-	return GetFacetTerms(idx.GetFacet(name))
-}
-
-func (idx *Index) GetFacetValues(name string) []string {
-	return maps.Keys(idx.GetFacet(name))
-}
-
-func (idx *Index) GetFacetTermItems(facet, term string) []string {
-	f := idx.GetFacet(facet)
-	if f.Has(term) {
-		return f[term]
-	}
-	return []string{}
+	return f.GetTerm(term)
 }
 
 func (idx *Index) SetPK(pk string) *Index {
