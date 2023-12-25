@@ -18,17 +18,19 @@ type Facet struct {
 type Term struct {
 	Value string
 	Count int
-	items []string
+	items []uint32
 }
 
 func NewFacet(name string) *Facet {
 	return &Facet{
 		Name:     name,
 		Operator: "or",
+		Terms:    make(map[string]*Term),
+		terms:    make(url.Values),
 	}
 }
 
-func NewFacetVals(name string, pk string, data []map[string]any) url.Values {
+func CollectFacetValues(name string, pk string, data []map[string]any) url.Values {
 	facet := make(url.Values)
 	for _, item := range data {
 		if terms, ok := item[name]; ok {
@@ -38,6 +40,15 @@ func NewFacetVals(name string, pk string, data []map[string]any) url.Values {
 		}
 	}
 	return facet
+}
+
+func GetTerms(name string, pk string, data []map[string]any) map[string]*Term {
+	vals := CollectFacetValues(name, pk, data)
+	terms := make(map[string]*Term)
+	for term, ids := range vals {
+		terms[term] = NewTerm(term, ids)
+	}
+	return terms
 }
 
 //func Intersect(vals url.Values, vals ...string) (url.Values, []string) {
@@ -76,10 +87,10 @@ func NewTerm(name string, vals []string) *Term {
 	term := &Term{
 		Value: name,
 		Count: len(vals),
-		items: make([]string, len(vals)),
+		items: make([]uint32, len(vals)),
 	}
 	for i, val := range vals {
-		term.items[i] = val
+		term.items[i] = cast.ToUint32(val)
 	}
 	return term
 }
@@ -87,7 +98,7 @@ func NewTerm(name string, vals []string) *Term {
 func (t *Term) Bitmap() bitmap.Bitmap {
 	var bits bitmap.Bitmap
 	for _, item := range t.items {
-		bits.Set(cast.ToUint32(item))
+		bits.Set(item)
 	}
 	return bits
 }

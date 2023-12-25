@@ -11,7 +11,11 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var (
+	cfgFile  string
+	dataFile string
+	idx      = &facet.Index{}
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -25,13 +29,23 @@ var rootCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal(err)
 			}
-			idx := &facet.Index{}
 			err = json.Unmarshal(d, idx)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("%v\n", idx)
 		}
+		if dataFile == "" {
+			log.Fatalf("no index data provided")
+		}
+		d, err := os.ReadFile(dataFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = json.Unmarshal(d, &idx.Data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%#V\n", idx.Facets()["tags"])
 	},
 }
 
@@ -52,7 +66,8 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "index config")
-
+	rootCmd.PersistentFlags().StringVarP(&idx.Name, "name", "n", "", "index name")
+	rootCmd.PersistentFlags().StringVarP(&dataFile, "data", "d", "", "data to index")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 

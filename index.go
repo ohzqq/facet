@@ -10,12 +10,12 @@ import (
 )
 
 type Index struct {
-	Name   string                `json:"name"`
-	Key    string                `json:"key"`
-	Data   []map[string]any      `json:"data"`
-	items  []string              `json:"-"`
-	facets map[string]url.Values `json:"-"`
-	Facets map[string]*Facet     `json:"facets"`
+	Name     string                `json:"name"`
+	Key      string                `json:"key"`
+	Data     []map[string]any      `json:"data"`
+	items    []string              `json:"-"`
+	facets   map[string]url.Values `json:"-"`
+	FacetCfg map[string]*Facet     `json:"facets"`
 }
 
 func New(name string, facets []string, data []map[string]any, pk ...string) *Index {
@@ -30,9 +30,28 @@ func New(name string, facets []string, data []map[string]any, pk ...string) *Ind
 	}
 	idx.items = CollectIDs(idx.Key, data)
 	for _, f := range facets {
-		idx.facets[f] = NewFacetVals(f, idx.Key, data)
+		idx.facets[f] = CollectFacetValues(f, idx.Key, data)
 	}
 	return idx
+}
+
+func (idx *Index) Facets() map[string]*Facet {
+	//ids := CollectIDsInt(idx.Key, idx.Data)
+	//items := NewBitmap(lo.ToAnySlice(idx.items))
+	//facets := make(map[string]url.Values)
+	idx.CollectTerms()
+	return idx.FacetCfg
+}
+
+func (idx *Index) CollectTerms() {
+	for name, facet := range idx.FacetCfg {
+		facet.Terms = make(map[string]*Term)
+
+		vals := CollectFacetValues(name, idx.Key, idx.Data)
+		for term, ids := range vals {
+			facet.Terms[term] = NewTerm(term, ids)
+		}
+	}
 }
 
 func (idx *Index) Bitmap(ids ...any) bitmap.Bitmap {
