@@ -1,44 +1,15 @@
 package facet
 
 import (
-	"encoding/json"
-	"log"
-	"os"
 	"testing"
 )
 
-var books []map[string]any
-
-const numBooks = 7174
-
-func init() {
-	d, err := os.ReadFile("testdata/audiobooks.json")
-	if err != nil {
-		log.Fatal(err)
+func TestRoaringBitmap(t *testing.T) {
+	r := idx.Roar()
+	if len(r.ToArray()) != 7174 {
+		t.Errorf("got %d, expected %d\n", r.ToArray(), 7174)
 	}
-
-	var res []map[string]any
-	err = json.Unmarshal(d, &res)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	books = res
 }
 
-func loadData(t *testing.T) []map[string]any {
-	d, err := os.ReadFile("testdata/audiobooks.json")
-	if err != nil {
-		t.Error(err)
-	}
-
-	var books []map[string]any
-	err = json.Unmarshal(d, &books)
-	if err != nil {
-		t.Error(err)
-	}
-
-	books = books
-
-	return books
+func TestRoaringTerms(t *testing.T) {
 }

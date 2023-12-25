@@ -2,27 +2,48 @@ package facet
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/samber/lo"
 )
 
-var idx *Index
+var idx = &Index{}
+
+var books []map[string]any
+
+const numBooks = 7174
 
 func init() {
-	idx = New("audiobooks", []string{"tags", "authors", "narrators"}, books)
+	cfg, err := os.ReadFile("testdata/config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = json.Unmarshal(cfg, idx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	d, err := os.ReadFile("testdata/audiobooks.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = json.Unmarshal(d, &idx.Data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	books = idx.Data
 }
 
 func TestNewIndex(t *testing.T) {
-	books := loadData(t)
-	idx = New("audiobooks", []string{"tags", "authors", "narrators"}, books)
-	fmt.Printf("%v\n", idx.Name)
+	New("audiobooks", []string{"tags", "authors", "narrators"}, books)
 }
 
 func TestIdxCfg(t *testing.T) {
-	cfg := &Index{}
-	err := json.Unmarshal([]byte(testCfg), cfg)
+	//cfg := &Index{}
+	err := json.Unmarshal([]byte(testCfg), idx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -45,18 +66,22 @@ func TestProcessFacets(t *testing.T) {
 	//terms := idx.FacetMap()
 }
 
-//func TestConjQuery(t *testing.T) {
-//  abo := idx.GetFacetTermItems("tags", "abo")
-//  dnr := idx.GetFacetTermItems("tags", "dnr")
-//  fmt.Printf("abo %v\n", len(abo))
-//  fmt.Printf("dnr %v\n", len(dnr))
-//  or := lo.Union(abo, dnr)
+func loadData(t *testing.T) []map[string]any {
+	d, err := os.ReadFile("testdata/audiobooks.json")
+	if err != nil {
+		t.Error(err)
+	}
 
-//  books := idx.GetByID(or)
-//  if len(or) != len(books) {
-//    t.Errorf("got %d books expected %d\n", len(books), len(or))
-//  }
-//}
+	var books []map[string]any
+	err = json.Unmarshal(d, &books)
+	if err != nil {
+		t.Error(err)
+	}
+
+	books = books
+
+	return books
+}
 
 func TestData(t *testing.T) {
 	books := loadData(t)

@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/RoaringBitmap/roaring"
 	"github.com/kelindar/bitmap"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -42,6 +43,11 @@ func (idx *Index) Facets() map[string]*Facet {
 	//facets := make(map[string]url.Values)
 	idx.CollectTerms()
 	return idx.FacetCfg
+}
+
+func (idx *Index) Roar() *roaring.Bitmap {
+	ids := CollectIDsInt(idx.Key, idx.Data)
+	return roaring.BitmapOf(ids...)
 }
 
 func (idx *Index) Filter(q url.Values) []string {

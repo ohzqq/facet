@@ -3,6 +3,7 @@ package facet
 import (
 	"net/url"
 
+	"github.com/RoaringBitmap/roaring"
 	"github.com/kelindar/bitmap"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -108,4 +109,8 @@ func (t *Term) Bitmap() bitmap.Bitmap {
 		bits.Set(item)
 	}
 	return bits
+}
+
+func (t *Term) Roar() *roaring.Bitmap {
+	return roaring.BitmapOf(t.items...)
 }
