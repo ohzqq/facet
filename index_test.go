@@ -1,6 +1,7 @@
 package facet
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -19,11 +20,20 @@ func TestNewIndex(t *testing.T) {
 	fmt.Printf("%v\n", idx.Name)
 }
 
+func TestIdxCfg(t *testing.T) {
+	cfg := &Index{}
+	err := json.Unmarshal([]byte(testCfg), cfg)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("%v\n", cfg)
+}
+
 func TestProcessFacets(t *testing.T) {
 	//idx = idx.ProcessFacets()
 
 	//idx.processData()
-	for _, f := range idx.Facets {
+	for _, f := range idx.facets {
 		og := len(lo.Keys(f))
 		uniq := len(lo.Uniq(lo.Keys(f)))
 		if og != uniq {
@@ -52,3 +62,16 @@ func TestData(t *testing.T) {
 	books := loadData(t)
 	println(len(books))
 }
+
+const testCfg = `
+{
+	"name": "audiobooks",
+	"key": "id",
+	"facets": {
+		"tags": {
+			"operator": "and"
+		},
+		"authors": {}
+	}
+}
+`

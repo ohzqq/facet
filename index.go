@@ -10,26 +10,27 @@ import (
 )
 
 type Index struct {
-	Name   string
-	PK     string
-	Data   []map[string]any
-	items  []string
-	Facets map[string]url.Values
+	Name   string                `json:"name"`
+	Key    string                `json:"key"`
+	Data   []map[string]any      `json:"data"`
+	items  []string              `json:"-"`
+	facets map[string]url.Values `json:"-"`
+	Facets map[string]*Facet     `json:"facets"`
 }
 
 func New(name string, facets []string, data []map[string]any, pk ...string) *Index {
 	idx := &Index{
 		Name:   name,
 		Data:   data,
-		PK:     "id",
-		Facets: make(map[string]url.Values),
+		Key:    "id",
+		facets: make(map[string]url.Values),
 	}
 	if len(pk) > 0 {
-		idx.PK = pk[0]
+		idx.Key = pk[0]
 	}
-	idx.items = CollectIDs(idx.PK, data)
+	idx.items = CollectIDs(idx.Key, data)
 	for _, f := range facets {
-		idx.Facets[f] = NewFacetVals(f, idx.PK, data)
+		idx.facets[f] = NewFacetVals(f, idx.Key, data)
 	}
 	return idx
 }
@@ -44,7 +45,7 @@ func (idx *Index) Bitmap(ids ...any) bitmap.Bitmap {
 func (idx *Index) GetByID(ids []string) []map[string]any {
 	var data []map[string]any
 	for _, item := range idx.Data {
-		if lo.Contains(ids, cast.ToString(item[idx.PK])) {
+		if lo.Contains(ids, cast.ToString(item[idx.Key])) {
 			data = append(data, item)
 		}
 	}
@@ -65,7 +66,7 @@ func Filter(idx *Index, facet string, op string, filters []string, ids ...any) (
 		}
 		var rest []map[string]any
 		for _, item := range idx.Data {
-			if bitIDs.Contains(cast.ToUint32(item[idx.PK])) {
+			if bitIDs.Contains(cast.ToUint32(item[idx.Key])) {
 				rest = append(rest, item)
 			}
 		}
@@ -91,7 +92,7 @@ func CollectIDs(pk string, data []map[string]any) []string {
 }
 
 func (idx *Index) GetFacet(name string) url.Values {
-	if f, ok := idx.Facets[name]; ok {
+	if f, ok := idx.facets[name]; ok {
 		return f
 	}
 	return url.Values{}
@@ -123,7 +124,7 @@ func (idx *Index) GetFacetTermItems(facet, term string) []string {
 }
 
 func (idx *Index) SetPK(pk string) *Index {
-	idx.PK = pk
+	idx.Key = pk
 	return idx
 }
 

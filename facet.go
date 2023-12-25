@@ -9,9 +9,10 @@ import (
 )
 
 type Facet struct {
-	Name  string
-	Terms map[string]*Term
-	terms url.Values
+	Name     string
+	Terms    map[string]*Term
+	Operator string
+	terms    url.Values
 }
 
 type Term struct {
@@ -22,7 +23,8 @@ type Term struct {
 
 func NewFacet(name string) *Facet {
 	return &Facet{
-		Name: name,
+		Name:     name,
+		Operator: "or",
 	}
 }
 
