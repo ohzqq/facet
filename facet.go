@@ -38,6 +38,21 @@ func (f *Facet) GetTerm(term string) *Term {
 	return &Term{Value: term}
 }
 
+func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
+	var bits []*roaring.Bitmap
+	for _, filter := range filters {
+		term := f.GetTerm(filter)
+		bits = append(bits, term.Roar())
+	}
+
+	switch f.Operator {
+	case "and":
+		return roaring.ParAnd(4, bits...)
+	default:
+		return roaring.ParOr(4, bits...)
+	}
+}
+
 func CollectFacetValues(name string, pk string, data []map[string]any) url.Values {
 	facet := make(url.Values)
 	for _, item := range data {

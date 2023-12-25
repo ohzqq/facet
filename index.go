@@ -3,7 +3,6 @@ package facet
 import (
 	"errors"
 	"net/url"
-	"strconv"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/kelindar/bitmap"
@@ -50,71 +49,26 @@ func (idx *Index) Roar() *roaring.Bitmap {
 	return roaring.BitmapOf(ids...)
 }
 
-func (idx *Index) Filter(q url.Values) []string {
-	og := CollectAnyIDs(idx.Key, idx.Data)
-	items := NewBitmap(og)
-
-	var op string
-	var bits []bitmap.Bitmap
+func (idx *Index) Filter(q url.Values) []map[string]any {
+	var bits []*roaring.Bitmap
 	for name, filters := range q {
 		if facet, ok := idx.FacetCfg[name]; ok {
-			for _, filter := range filters {
-				term, err := idx.GetTerm(name, filter)
-				if err != nil {
-					return nil
-				}
-				b := term.Bitmap()
-				bits = append(bits, b)
-				switch facet.Operator {
-				case "or":
-					op = "or"
-				case "and":
-					op = "and"
-				}
+			bits = append(bits, facet.Filter(filters...))
+		}
+	}
+
+	filtered := roaring.ParOr(4, bits...)
+
+	ids := filtered.ToArray()
+	items := make([]map[string]any, len(ids))
+	for _, item := range idx.Data {
+		for i, id := range ids {
+			if cast.ToString(id) == cast.ToString(item[idx.Key]) {
+				items[i] = item
 			}
 		}
 	}
-
-	switch len(bits) {
-	case 0:
-	case 1:
-		switch op {
-		case "or":
-			items.Or(bits[0])
-		case "and":
-			items.And(bits[0])
-		}
-	default:
-		switch op {
-		case "or":
-			items.Or(bits[0], bits[1:]...)
-		case "and":
-			items.And(bits[0], bits[1:]...)
-		}
-	}
-
-	var ids []string
-	items.Range(func(x uint32) {
-		id := strconv.Itoa(int(x))
-		ids = append(ids, id)
-	})
-	return ids
-}
-
-func or(bits ...bitmap.Bitmap) []bitmap.Bitmap {
-	if len(bits) < 2 {
-		return bits
-	}
-	bits[0].Or(bits[1])
-	return bits[2:]
-}
-
-func and(bits ...bitmap.Bitmap) []bitmap.Bitmap {
-	if len(bits) < 2 {
-		return bits
-	}
-	bits[0].And(bits[1])
-	return bits[2:]
+	return items
 }
 
 func (idx *Index) CollectTerms() {
