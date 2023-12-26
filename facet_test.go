@@ -53,32 +53,15 @@ func TestRoaringFilters(t *testing.T) {
 	q := make(url.Values)
 	q.Add("tags", "abo")
 	q.Add("tags", "dnr")
-	q.Add("authors", "Alice Winter")
+	q.Add("authors", "Alice Winters")
 	q.Add("authors", "Amy Lane")
+	testFilters(q)
+}
+
+func testFilters(q url.Values) {
+	println(q.Encode())
 	items := idx.Filter(q)
 	fmt.Printf("%+v\n", len(items))
-
-	//var bits []*roaring.Bitmap
-	//for name, filters := range q {
-	//if facet, ok := idx.FacetCfg[name]; ok {
-	//for _, filter := range filters {
-	//term := facet.GetTerm(filter)
-	//bits = append(bits, term.Roar())
-	//}
-	//}
-	//}
-
-	//or := roaring.ParOr(4, bits...)
-	//orC := len(or.ToArray())
-	//if orC != 2269 {
-	//t.Errorf("got %d, expected %d\n", orC, 2269)
-	//}
-
-	//and := roaring.ParAnd(4, bits...)
-	//andC := len(and.ToArray())
-	//if andC != 384 {
-	//t.Errorf("got %d, expected %d\n", andC, 384)
-	//}
 }
 
 func getRoaringAbo(t *testing.T) *roaring.Bitmap {

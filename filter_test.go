@@ -1,29 +1,17 @@
 package facet
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
+	"net/url"
 	"testing"
 )
 
 func TestFilters(t *testing.T) {
-	d, err := os.ReadFile("testdata/config.json")
+	println("test filters")
+	f1 := `tags=abo&tags=dnr&authors=Alice+Winters&authors=Amy+Lane`
+	q, err := url.ParseQuery(f1)
 	if err != nil {
 		t.Error(err)
 	}
-	tf := make(map[string]any)
-	err = json.Unmarshal(d, &tf)
-	if err != nil {
-		t.Error(err)
-	}
-	facets := make(map[string]*Facet)
-	if f, ok := tf["facets"]; ok {
-		facets = parseFacetMap(f)
-	} else {
-		t.Errorf("facets not found in config")
-	}
-
-	fmt.Printf("%+v\n", facets)
+	testFilters(q)
 	//fmt.Printf("%+v\n", books)
 }

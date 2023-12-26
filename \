@@ -1,6 +1,8 @@
 package facet
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -23,22 +25,21 @@ func Filter(data []map[string]any, cfg map[string]any, filters url.Values) ([]ma
 }
 
 func parseFilters(f any) (url.Values, error) {
-	filters := make(map[string][]string)
-	var err error
+	filters := make(url.Values)
 	switch val := f.(type) {
+	case []byte:
+		filters := make(url.Values)
+		err := json.Unmarshal(val, &filters)
+		if err != nil {
+			return nil, err
+		}
+		return filters, nil
+	case map[string][]string:
+		return url.Values(val), nil
 	case url.Values:
 		return val, nil
-	case []byte:
-		filters, err = cast.ToStringMapStringSliceE(string(val))
-		if err != nil {
-			return nil, err
-		}
-	case string:
 	default:
-		filters, err = cast.ToStringMapStringSliceE(val)
-		if err != nil {
-			return nil, err
-		}
+		return cast.ToStringMapStringSliceE(val)
 	}
-	return url.Values(filters), nil
+	return nil, errors.New("filters couldn't be parsed")
 }
