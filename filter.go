@@ -34,6 +34,11 @@ func parseFilters(f any) (url.Values, error) {
 			return nil, err
 		}
 	case string:
+		q, err := url.ParseQuery(val)
+		if err != nil {
+			return nil, err
+		}
+		return q, nil
 	default:
 		filters, err = cast.ToStringMapStringSliceE(val)
 		if err != nil {
