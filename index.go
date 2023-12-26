@@ -8,26 +8,23 @@ import (
 	"os"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/kelindar/bitmap"
 	"github.com/mitchellh/mapstructure"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
 type Index struct {
-	Name     string                `json:"name"`
-	Key      string                `json:"key"`
-	Data     []map[string]any      `json:"-"`
-	items    []string              `json:"-"`
-	facets   map[string]url.Values `json:"-"`
-	FacetCfg map[string]*Facet     `json:"facets"`
+	Key    string                `json:"key"`
+	Data   []map[string]any      `json:"data,omitempty"`
+	items  []any                 `json:"-"`
+	facets map[string]url.Values `json:"-"`
+	Facets map[string]*Facet     `json:"facets"`
 }
 
 type Opt func(*Index) Opt
 
 func New(c any, data ...any) (*Index, error) {
-	idx := &Index{}
-	err := idx.SetCfg(c)
+	idx, err := parseCfg(c)
 	if err != nil {
 		return nil, err
 	}
@@ -41,45 +38,15 @@ func New(c any, data ...any) (*Index, error) {
 		return idx, errors.New("data is required")
 	}
 
-	idx.Facets()
+	idx.CollectTerms()
 
 	return idx, nil
-}
-
-func NewIdx(name string, facets []string, data []map[string]any, pk ...string) *Index {
-	idx := &Index{
-		Name:   name,
-		Data:   data,
-		Key:    "id",
-		facets: make(map[string]url.Values),
-	}
-	if len(pk) > 0 {
-		idx.Key = pk[0]
-	}
-	idx.items = CollectIDs(idx.Key, data)
-	for _, f := range facets {
-		idx.facets[f] = CollectFacetValues(f, idx.Key, data)
-	}
-	return idx
-}
-
-func (idx *Index) Facets() map[string]*Facet {
-	//ids := CollectIDsInt(idx.Key, idx.Data)
-	//items := NewBitmap(lo.ToAnySlice(idx.items))
-	//facets := make(map[string]url.Values)
-	idx.CollectTerms()
-	return idx.FacetCfg
-}
-
-func (idx *Index) Roar() *roaring.Bitmap {
-	ids := CollectIDsInt(idx.Key, idx.Data)
-	return roaring.BitmapOf(ids...)
 }
 
 func (idx *Index) Filter(q url.Values) []map[string]any {
 	var bits []*roaring.Bitmap
 	for name, filters := range q {
-		if facet, ok := idx.FacetCfg[name]; ok {
+		if facet, ok := idx.Facets[name]; ok {
 			bits = append(bits, facet.Filter(filters...))
 		}
 	}
@@ -87,68 +54,22 @@ func (idx *Index) Filter(q url.Values) []map[string]any {
 	filtered := roaring.ParOr(4, bits...)
 
 	ids := filtered.ToArray()
-	items := make([]map[string]any, len(ids))
-	for _, item := range idx.Data {
-		for i, id := range ids {
-			if cast.ToString(id) == cast.ToString(item[idx.Key]) {
-				items[i] = item
-			}
-		}
-	}
-	return items
+	return FilterItems(idx.Data, lo.ToAnySlice(ids))
 }
 
 func (idx *Index) CollectTerms() {
-	for name, facet := range idx.FacetCfg {
+	for name, facet := range idx.Facets {
 		facet.Terms = make(map[string]*Term)
 
-		vals := CollectFacetValues(name, idx.Key, idx.Data)
+		vals := collectFacetValues(name, idx.Data)
 		for term, ids := range vals {
 			facet.Terms[term] = NewTerm(term, ids)
 		}
 	}
 }
 
-func (idx *Index) Bitmap(ids ...any) bitmap.Bitmap {
-	if len(ids) > 0 {
-		return NewBitmap(ids)
-	}
-	return NewBitmap(lo.ToAnySlice(idx.items))
-}
-
-func (idx *Index) GetByID(ids []string) []map[string]any {
-	var data []map[string]any
-	for _, item := range idx.Data {
-		if lo.Contains(ids, cast.ToString(item[idx.Key])) {
-			data = append(data, item)
-		}
-	}
-	return data
-}
-
-func CollectIDsInt(pk string, data []map[string]any) []uint32 {
-	iter := func(item map[string]any, _ int) uint32 {
-		return cast.ToUint32(item[pk])
-	}
-	return lo.Map(data, iter)
-}
-
-func CollectAnyIDs(pk string, data []map[string]any) []any {
-	iter := func(item map[string]any, _ int) any {
-		return item[pk]
-	}
-	return lo.Map(data, iter)
-}
-
-func CollectIDs(pk string, data []map[string]any) []string {
-	iter := func(item map[string]any, _ int) string {
-		return cast.ToString(item[pk])
-	}
-	return lo.Map(data, iter)
-}
-
 func (idx *Index) GetFacet(name string) (*Facet, error) {
-	if f, ok := idx.FacetCfg[name]; ok {
+	if f, ok := idx.Facets[name]; ok {
 		return f, nil
 	}
 	return &Facet{}, errors.New("no such facet")
@@ -163,21 +84,6 @@ func (idx *Index) GetTerm(facet, term string) (*Term, error) {
 	return f.GetTerm(term), nil
 }
 
-func (idx *Index) SetPK(pk any) *Index {
-	idx.Key = cast.ToString(pk)
-	return idx
-}
-
-func (idx *Index) SetCfg(cfg any) error {
-	key, facets, err := parseCfg(cfg)
-	if err != nil {
-		return err
-	}
-	idx.Key = key
-	idx.FacetCfg = facets
-	return nil
-}
-
 func (idx *Index) SetData(data ...any) error {
 	for _, datum := range data {
 		d, err := parseData(datum)
@@ -189,6 +95,52 @@ func (idx *Index) SetData(data ...any) error {
 	return nil
 }
 
+func NewIndexFromFiles(cfg string, data ...string) (*Index, error) {
+
+	idx := &Index{}
+
+	if Exist(cfg) {
+		data, err := os.ReadFile(cfg)
+		if err != nil {
+			return nil, err
+		}
+		idx, err = unmarshalCfg(data)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	d, err := NewDataFromFiles(data...)
+	if err != nil {
+		return nil, err
+	}
+	idx.Data = d
+	return idx, nil
+}
+
+func NewDataFromFiles(d ...string) ([]map[string]any, error) {
+	var data []map[string]any
+	for _, datum := range d {
+		p, err := dataFromFile(datum)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, p...)
+	}
+	return data, nil
+}
+
+func dataFromFile(d string) ([]map[string]any, error) {
+	if Exist(d) {
+		data, err := os.ReadFile(d)
+		if err != nil {
+			return nil, err
+		}
+		return unmarshalData(data)
+	}
+	return nil, errors.New("can't read data file")
+}
+
 func Exist(path string) bool {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return false
@@ -196,53 +148,40 @@ func Exist(path string) bool {
 	return true
 }
 
-func parseCfg(c any) (string, map[string]*Facet, error) {
-	cfg := make(map[string]any)
+func parseCfg(c any) (*Index, error) {
+	cfg := &Index{}
 	var err error
 	switch val := c.(type) {
 	case []byte:
-		cfg, err = unmarshalCfg(val)
+		return unmarshalCfg(val)
 		if err != nil {
-			return "", nil, err
+			return nil, err
 		}
 	case string:
 		if Exist(val) {
-			data, err := os.ReadFile(val)
-			if err != nil {
-				return "", nil, err
-			}
-			cfg, err = unmarshalCfg(data)
-			if err != nil {
-				return "", nil, err
-			}
+			return NewIndexFromFiles(val)
 		} else {
-			cfg, err = unmarshalCfg([]byte(val))
-			if err != nil {
-				return "", nil, err
-			}
+			return unmarshalCfg([]byte(val))
 		}
 	case map[string]any:
-		cfg = val
+		if f, ok := val["facets"]; ok {
+			cfg.Facets = parseFacetMap(f)
+		} else {
+			return cfg, errors.New("facets not found in config")
+		}
+		if data, ok := val["data"]; ok {
+			err := cfg.SetData(data)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	pk := "id"
-	facets := make(map[string]*Facet)
-
-	if f, ok := cfg["facets"]; ok {
-		facets = parseFacetMap(f)
-	} else {
-		return pk, facets, errors.New("facets not found in config")
-	}
-
-	if key, ok := cfg["key"]; ok {
-		pk = cast.ToString(key)
-	}
-
-	return pk, facets, nil
+	return cfg, nil
 }
 
-func unmarshalCfg(d []byte) (map[string]any, error) {
-	cfg := make(map[string]any)
+func unmarshalCfg(d []byte) (*Index, error) {
+	cfg := &Index{}
 	err := json.Unmarshal(d, &cfg)
 	if err != nil {
 		return cfg, err
@@ -270,11 +209,7 @@ func parseData(d any) ([]map[string]any, error) {
 		return unmarshalData(val)
 	case string:
 		if Exist(val) {
-			data, err := os.ReadFile(val)
-			if err != nil {
-				return nil, err
-			}
-			return unmarshalData(data)
+			return dataFromFile(val)
 		} else {
 			return unmarshalData([]byte(val))
 		}

@@ -12,14 +12,22 @@ func Filter(data []map[string]any, cfg map[string]any, filters url.Values) ([]ma
 		Data: data,
 	}
 	if f, ok := cfg["facets"]; ok {
-		idx.FacetCfg = parseFacetMap(f)
+		idx.Facets = parseFacetMap(f)
 	}
-	if key, ok := cfg["key"]; ok {
-		idx.Key = cast.ToString(key)
-	}
-	idx.Facets()
 	fmt.Printf("%#v\n", idx)
 	return data, cfg
+}
+
+func FilterItems(data []map[string]any, ids []any) []map[string]any {
+	items := make([]map[string]any, len(ids))
+	for item, _ := range data {
+		for i, id := range ids {
+			if cast.ToInt(id) == item {
+				items[i] = data[item]
+			}
+		}
+	}
+	return items
 }
 
 func parseFilters(f any) (url.Values, error) {

@@ -24,35 +24,6 @@ func init() {
 	books = idx.Data
 }
 
-func initialize() *Index {
-	idx := &Index{}
-	cfg, err := os.ReadFile("testdata/config.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = json.Unmarshal(cfg, idx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	d, err := os.ReadFile("testdata/audiobooks.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = json.Unmarshal(d, &idx.Data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	idx.Facets()
-
-	return idx
-}
-
-func TestNewIndex(t *testing.T) {
-	NewIdx("audiobooks", []string{"tags", "authors", "narrators"}, books)
-}
-
 func TestIdxCfg(t *testing.T) {
 	//cfg := &Index{}
 	err := json.Unmarshal([]byte(testCfg), idx)

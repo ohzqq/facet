@@ -8,20 +8,13 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
-func TestRoaringBitmap(t *testing.T) {
-	r := idx.Roar()
-	if len(r.ToArray()) != 7174 {
-		t.Errorf("got %d, expected %d\n", r.ToArray(), 7174)
-	}
-}
-
 func TestRoaringTerms(t *testing.T) {
 	f, err := idx.GetFacet("tags")
 	if err != nil {
 		t.Error(err)
 	}
 	term := f.GetTerm("abo")
-	r := term.Roar()
+	r := term.Bitmap()
 	if len(r.ToArray()) != 416 {
 		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 416)
 	}
@@ -66,6 +59,9 @@ func testFilters(q url.Values) {
 	println(q.Encode())
 	items := idx.Filter(q)
 	fmt.Printf("%+v\n", len(items))
+	//for _, item := range items {
+	//  fmt.Printf("%+v\n", item)
+	//}
 }
 
 func getRoaringAbo(t *testing.T) *roaring.Bitmap {
@@ -74,7 +70,7 @@ func getRoaringAbo(t *testing.T) *roaring.Bitmap {
 		t.Error(err)
 	}
 	term := f.GetTerm("abo")
-	r := term.Roar()
+	r := term.Bitmap()
 	if len(r.ToArray()) != 416 {
 		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 416)
 	}
@@ -87,7 +83,7 @@ func getRoaringDnr(t *testing.T) *roaring.Bitmap {
 		t.Error(err)
 	}
 	term := f.GetTerm("dnr")
-	r := term.Roar()
+	r := term.Bitmap()
 	if len(r.ToArray()) != 2237 {
 		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 2237)
 	}

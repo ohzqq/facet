@@ -4,8 +4,6 @@ import (
 	"net/url"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/kelindar/bitmap"
-	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
@@ -42,7 +40,7 @@ func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	var bits []*roaring.Bitmap
 	for _, filter := range filters {
 		term := f.GetTerm(filter)
-		bits = append(bits, term.Roar())
+		bits = append(bits, term.Bitmap())
 	}
 
 	switch f.Operator {
@@ -53,57 +51,16 @@ func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	}
 }
 
-func CollectFacetValues(name string, pk string, data []map[string]any) url.Values {
+func collectFacetValues(name string, data []map[string]any) url.Values {
 	facet := make(url.Values)
-	for _, item := range data {
+	for i, item := range data {
 		if terms, ok := item[name]; ok {
 			for _, term := range terms.([]any) {
-				facet.Add(cast.ToString(term), cast.ToString(item[pk]))
+				facet.Add(cast.ToString(term), cast.ToString(i))
 			}
 		}
 	}
 	return facet
-}
-
-func GetTerms(name string, pk string, data []map[string]any) map[string]*Term {
-	vals := CollectFacetValues(name, pk, data)
-	terms := make(map[string]*Term)
-	for term, ids := range vals {
-		terms[term] = NewTerm(term, ids)
-	}
-	return terms
-}
-
-//func Intersect(vals url.Values, vals ...string) (url.Values, []string) {
-//}
-
-func CollectTerms(data []map[string]any, facet string) []string {
-	var terms [][]string
-	for _, item := range data {
-		if t, ok := item[facet]; ok {
-			terms = append(terms, cast.ToStringSlice(t))
-		}
-	}
-	return lo.Uniq(lo.Flatten(terms))
-}
-
-func (f *Facet) AddTerm(term string, ids ...any) *Facet {
-	if _, ok := f.Terms[term]; !ok {
-		f.Terms[term] = &Term{}
-	}
-	t := &Term{
-		Value: term,
-	}
-	f.Terms[term] = t
-	return f
-}
-
-func GetFacetTerms(facet url.Values) []*Term {
-	var terms []*Term
-	for name, vals := range facet {
-		terms = append(terms, NewTerm(name, vals))
-	}
-	return terms
 }
 
 func NewTerm(name string, vals []string) *Term {
@@ -118,14 +75,6 @@ func NewTerm(name string, vals []string) *Term {
 	return term
 }
 
-func (t *Term) Bitmap() bitmap.Bitmap {
-	var bits bitmap.Bitmap
-	for _, item := range t.items {
-		bits.Set(item)
-	}
-	return bits
-}
-
-func (t *Term) Roar() *roaring.Bitmap {
+func (t *Term) Bitmap() *roaring.Bitmap {
 	return roaring.BitmapOf(t.items...)
 }
