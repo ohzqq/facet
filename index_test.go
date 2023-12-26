@@ -5,8 +5,6 @@ import (
 	"log"
 	"os"
 	"testing"
-
-	"github.com/samber/lo"
 )
 
 var idx = &Index{}
@@ -31,22 +29,6 @@ func TestIdxCfg(t *testing.T) {
 		t.Error(err)
 	}
 	//fmt.Printf("%v\n", cfg)
-}
-
-func TestProcessFacets(t *testing.T) {
-	//idx = idx.ProcessFacets()
-
-	//idx.processData()
-	for _, f := range idx.facets {
-		og := len(lo.Keys(f))
-		uniq := len(lo.Uniq(lo.Keys(f)))
-		if og != uniq {
-			t.Errorf("got %d terms, expected %d\n", uniq, og)
-		}
-		//fmt.Printf("%v\n", f)
-	}
-
-	//terms := idx.FacetMap()
 }
 
 func loadData(t *testing.T) []map[string]any {

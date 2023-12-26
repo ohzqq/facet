@@ -14,11 +14,8 @@ import (
 )
 
 type Index struct {
-	Key    string                `json:"key"`
-	Data   []map[string]any      `json:"data,omitempty"`
-	items  []any                 `json:"-"`
-	facets map[string]url.Values `json:"-"`
-	Facets map[string]*Facet     `json:"facets"`
+	Data   []map[string]any  `json:"data,omitempty"`
+	Facets map[string]*Facet `json:"facets"`
 }
 
 type Opt func(*Index) Opt
