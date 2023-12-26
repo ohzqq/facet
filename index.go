@@ -1,8 +1,10 @@
 package facet
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
+	"os"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/kelindar/bitmap"
@@ -19,7 +21,42 @@ type Index struct {
 	FacetCfg map[string]*Facet     `json:"facets"`
 }
 
-func New(name string, facets []string, data []map[string]any, pk ...string) *Index {
+type Opt func(*Index) Opt
+
+func New(c string, data ...string) (*Index, error) {
+	idx := &Index{}
+	cfg, err := os.ReadFile(c)
+	if err != nil {
+		return idx, err
+	}
+	err = json.Unmarshal(cfg, idx)
+	if err != nil {
+		return idx, err
+	}
+
+	for _, datum := range data {
+		d, err := os.ReadFile(datum)
+		if err != nil {
+			return idx, err
+		}
+		var dd []map[string]any
+		err = json.Unmarshal(d, &dd)
+		if err != nil {
+			return idx, err
+		}
+		idx.Data = append(idx.Data, dd...)
+	}
+
+	if len(idx.Data) < 1 {
+		return idx, errors.New("data is required")
+	}
+
+	idx.Facets()
+
+	return idx, nil
+}
+
+func NewIdx(name string, facets []string, data []map[string]any, pk ...string) *Index {
 	idx := &Index{
 		Name:   name,
 		Data:   data,
@@ -97,34 +134,6 @@ func (idx *Index) GetByID(ids []string) []map[string]any {
 		}
 	}
 	return data
-}
-
-func Filter(idx *Index, facet string, op string, filters []string, ids ...any) (*Index, string, string, []string) {
-	//agg := idx.GetFacet(facet)
-	bitIDs := idx.Bitmap(ids...)
-	f := lo.Slice(filters, 0, 1)
-	if len(f) > 0 {
-		term, err := idx.GetTerm(facet, f[0])
-		if err != nil {
-			return nil, "", "", nil
-		}
-		switch op {
-		case "and":
-			bitIDs.And(term.Bitmap())
-		case "or":
-			bitIDs.Or(term.Bitmap())
-		}
-		var rest []map[string]any
-		for _, item := range idx.Data {
-			if bitIDs.Contains(cast.ToUint32(item[idx.Key])) {
-				rest = append(rest, item)
-			}
-		}
-		idx.Data = rest
-		return Filter(idx, facet, op, filters[0:])
-	}
-
-	return idx, facet, op, filters
 }
 
 func CollectIDsInt(pk string, data []map[string]any) []uint32 {

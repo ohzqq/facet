@@ -16,7 +16,11 @@ var books []map[string]any
 const numBooks = 7174
 
 func init() {
-	idx = initialize()
+	var err error
+	idx, err = New("testdata/config.json", "testdata/audiobooks.json")
+	if err != nil {
+		log.Fatal(err)
+	}
 	books = idx.Data
 }
 
@@ -46,7 +50,7 @@ func initialize() *Index {
 }
 
 func TestNewIndex(t *testing.T) {
-	New("audiobooks", []string{"tags", "authors", "narrators"}, books)
+	NewIdx("audiobooks", []string{"tags", "authors", "narrators"}, books)
 }
 
 func TestIdxCfg(t *testing.T) {
