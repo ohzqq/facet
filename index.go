@@ -3,11 +3,13 @@ package facet
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/url"
 	"os"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/kelindar/bitmap"
+	"github.com/mitchellh/mapstructure"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
@@ -23,31 +25,16 @@ type Index struct {
 
 type Opt func(*Index) Opt
 
-func New(cfg, data any) (*Index, error) {
+func New(c any, data ...any) (*Index, error) {
 	idx := &Index{}
-	return idx, nil
-}
-
-func NewFromFiles(c string, data ...string) (*Index, error) {
-	idx := &Index{}
-	key, facets, err := parseCfg(c)
+	err := idx.SetCfg(c)
 	if err != nil {
-		return idx, err
+		return nil, err
 	}
-	idx.Key = key
-	idx.FacetCfg = facets
 
-	for _, datum := range data {
-		d, err := os.ReadFile(datum)
-		if err != nil {
-			return idx, err
-		}
-		var dd []map[string]any
-		err = json.Unmarshal(d, &dd)
-		if err != nil {
-			return idx, err
-		}
-		idx.Data = append(idx.Data, dd...)
+	err = idx.SetData(data...)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(idx.Data) < 1 {
@@ -176,14 +163,30 @@ func (idx *Index) GetTerm(facet, term string) (*Term, error) {
 	return f.GetTerm(term), nil
 }
 
-func (idx *Index) SetPK(pk string) *Index {
-	idx.Key = pk
+func (idx *Index) SetPK(pk any) *Index {
+	idx.Key = cast.ToString(pk)
 	return idx
 }
 
-func (idx *Index) SetData(data []map[string]any) *Index {
-	idx.Data = data
-	return idx
+func (idx *Index) SetCfg(cfg any) error {
+	key, facets, err := parseCfg(cfg)
+	if err != nil {
+		return err
+	}
+	idx.Key = key
+	idx.FacetCfg = facets
+	return nil
+}
+
+func (idx *Index) SetData(data ...any) error {
+	for _, datum := range data {
+		d, err := parseData(datum)
+		if err != nil {
+			return err
+		}
+		idx.Data = append(idx.Data, d...)
+	}
+	return nil
 }
 
 func Exist(path string) bool {
@@ -191,4 +194,101 @@ func Exist(path string) bool {
 		return false
 	}
 	return true
+}
+
+func parseCfg(c any) (string, map[string]*Facet, error) {
+	cfg := make(map[string]any)
+	var err error
+	switch val := c.(type) {
+	case []byte:
+		cfg, err = unmarshalCfg(val)
+		if err != nil {
+			return "", nil, err
+		}
+	case string:
+		if Exist(val) {
+			data, err := os.ReadFile(val)
+			if err != nil {
+				return "", nil, err
+			}
+			cfg, err = unmarshalCfg(data)
+			if err != nil {
+				return "", nil, err
+			}
+		} else {
+			cfg, err = unmarshalCfg([]byte(val))
+			if err != nil {
+				return "", nil, err
+			}
+		}
+	case map[string]any:
+		cfg = val
+	}
+
+	pk := "id"
+	facets := make(map[string]*Facet)
+
+	if f, ok := cfg["facets"]; ok {
+		facets = parseFacetMap(f)
+	} else {
+		return pk, facets, errors.New("facets not found in config")
+	}
+
+	if key, ok := cfg["key"]; ok {
+		pk = cast.ToString(key)
+	}
+
+	return pk, facets, nil
+}
+
+func unmarshalCfg(d []byte) (map[string]any, error) {
+	cfg := make(map[string]any)
+	err := json.Unmarshal(d, &cfg)
+	if err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
+}
+
+func parseFacetMap(f any) map[string]*Facet {
+	facets := make(map[string]*Facet)
+	for name, agg := range cast.ToStringMap(f) {
+		facet := NewFacet(name)
+		err := mapstructure.Decode(agg, facet)
+		if err != nil {
+			log.Fatal(err)
+		}
+		facets[name] = facet
+	}
+	return facets
+}
+
+func parseData(d any) ([]map[string]any, error) {
+	switch val := d.(type) {
+	case []byte:
+		return unmarshalData(val)
+	case string:
+		if Exist(val) {
+			data, err := os.ReadFile(val)
+			if err != nil {
+				return nil, err
+			}
+			return unmarshalData(data)
+		} else {
+			return unmarshalData([]byte(val))
+		}
+	case []map[string]any:
+		return val, nil
+	}
+	return nil, errors.New("data couldn't be parsed")
+}
+
+func unmarshalData(d []byte) ([]map[string]any, error) {
+	var data []map[string]any
+	err := json.Unmarshal(d, &data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

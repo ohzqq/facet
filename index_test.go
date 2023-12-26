@@ -17,7 +17,7 @@ const numBooks = 7174
 
 func init() {
 	var err error
-	idx, err = NewFromFiles("testdata/config.json", "testdata/audiobooks.json")
+	idx, err = New("testdata/config.json", "testdata/audiobooks.json")
 	if err != nil {
 		log.Fatal(err)
 	}
