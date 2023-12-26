@@ -18,8 +18,6 @@ type Index struct {
 	Facets map[string]*Facet `json:"facets"`
 }
 
-type Opt func(*Index) Opt
-
 func New(c any, data ...any) (*Index, error) {
 	idx, err := parseCfg(c)
 	if err != nil {
@@ -40,7 +38,12 @@ func New(c any, data ...any) (*Index, error) {
 	return idx, nil
 }
 
-func (idx *Index) Filter(q url.Values) []map[string]any {
+func (idx *Index) Filter(q url.Values) *Index {
+	println(q.Encode())
+	if len(q) < 1 {
+		return idx
+	}
+
 	var bits []*roaring.Bitmap
 	for name, filters := range q {
 		if facet, ok := idx.Facets[name]; ok {
@@ -51,10 +54,15 @@ func (idx *Index) Filter(q url.Values) []map[string]any {
 	filtered := roaring.ParOr(4, bits...)
 
 	ids := filtered.ToArray()
-	return FilterItems(idx.Data, lo.ToAnySlice(ids))
+	data := FilterItems(idx.Data, lo.ToAnySlice(ids))
+	res := &Index{
+		Data:   data,
+		Facets: idx.Facets,
+	}
+	return res.CollectTerms()
 }
 
-func (idx *Index) CollectTerms() {
+func (idx *Index) CollectTerms() *Index {
 	for name, facet := range idx.Facets {
 		facet.Terms = make(map[string]*Term)
 
@@ -63,6 +71,7 @@ func (idx *Index) CollectTerms() {
 			facet.Terms[term] = NewTerm(term, ids)
 		}
 	}
+	return idx
 }
 
 func (idx *Index) GetFacet(name string) (*Facet, error) {
@@ -90,6 +99,18 @@ func (idx *Index) SetData(data ...any) error {
 		idx.Data = append(idx.Data, d...)
 	}
 	return nil
+}
+
+func (idx *Index) String() string {
+	return string(idx.JSON())
+}
+
+func (idx *Index) JSON() []byte {
+	d, err := json.Marshal(idx)
+	if err != nil {
+		return []byte("{}")
+	}
+	return d
 }
 
 func NewIndexFromFiles(cfg string, data ...string) (*Index, error) {

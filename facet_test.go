@@ -46,8 +46,8 @@ func TestRoaringFilters(t *testing.T) {
 	vals := make(url.Values)
 	vals.Add("tags", "abo")
 	vals.Add("tags", "dnr")
-	vals.Add("authors", "Alice Winters")
-	vals.Add("authors", "Amy Lane")
+	vals.Add("authors", "-Alice Winters")
+	//vals.Add("authors", "Amy Lane")
 	q, err := parseFilters(vals)
 	if err != nil {
 		t.Error(err)
@@ -56,10 +56,10 @@ func TestRoaringFilters(t *testing.T) {
 }
 
 func testFilters(q url.Values) {
-	println(q.Encode())
 	items := idx.Filter(q)
-	fmt.Printf("%+v\n", len(items))
-	//for _, item := range items {
+	fmt.Printf("%+v\n", len(items.Data))
+
+	//for _, item := range items.Data {
 	//  fmt.Printf("%+v\n", item)
 	//}
 }

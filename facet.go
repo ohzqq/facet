@@ -2,6 +2,7 @@ package facet
 
 import (
 	"net/url"
+	"strings"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/spf13/cast"
@@ -38,17 +39,28 @@ func (f *Facet) GetTerm(term string) *Term {
 
 func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	var bits []*roaring.Bitmap
+	var not []*roaring.Bitmap
 	for _, filter := range filters {
 		term := f.GetTerm(filter)
+		if strings.HasPrefix(filter, "-") {
+			not = append(not, term.Bitmap())
+			continue
+		}
 		bits = append(bits, term.Bitmap())
 	}
 
+	var comb *roaring.Bitmap
 	switch f.Operator {
 	case "and":
-		return roaring.ParAnd(4, bits...)
+		comb = roaring.ParAnd(4, bits...)
 	default:
-		return roaring.ParOr(4, bits...)
+		comb = roaring.ParOr(4, bits...)
 	}
+
+	for _, n := range not {
+		comb.AndNot(n)
+	}
+	return comb
 }
 
 func collectFacetValues(name string, data []map[string]any) url.Values {
