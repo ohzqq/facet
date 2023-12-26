@@ -23,16 +23,19 @@ type Index struct {
 
 type Opt func(*Index) Opt
 
-func New(c string, data ...string) (*Index, error) {
+func New(cfg, data any) (*Index, error) {
 	idx := &Index{}
-	cfg, err := os.ReadFile(c)
+	return idx, nil
+}
+
+func NewFromFiles(c string, data ...string) (*Index, error) {
+	idx := &Index{}
+	key, facets, err := parseCfg(c)
 	if err != nil {
 		return idx, err
 	}
-	err = json.Unmarshal(cfg, idx)
-	if err != nil {
-		return idx, err
-	}
+	idx.Key = key
+	idx.FacetCfg = facets
 
 	for _, datum := range data {
 		d, err := os.ReadFile(datum)
@@ -181,4 +184,11 @@ func (idx *Index) SetPK(pk string) *Index {
 func (idx *Index) SetData(data []map[string]any) *Index {
 	idx.Data = data
 	return idx
+}
+
+func Exist(path string) bool {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
 }
