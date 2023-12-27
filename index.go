@@ -52,30 +52,17 @@ func (idx *Index) Filter(q any) *Index {
 
 func (idx *Index) CollectTerms() *Index {
 	for name, facet := range idx.Facets {
-		facet.Items = make(map[string]*Term)
-
-		vals := collectFacetValues(name, idx.Data)
-		for term, ids := range vals {
-			facet.Items[term] = NewTerm(term, ids)
-		}
+		facet.Attribute = name
+		facet.CollectItems(idx.Data)
 	}
 	return idx
 }
 
-func (idx *Index) GetFacet(name string) (*Facet, error) {
+func (idx *Index) GetFacet(name string) *Facet {
 	if f, ok := idx.Facets[name]; ok {
-		return f, nil
+		return f
 	}
-	return NewFacet(name), errors.New("no such facet")
-}
-
-func (idx *Index) GetTerm(facet, term string) (*Term, error) {
-	f, err := idx.GetFacet(facet)
-	if err != nil {
-		return nil, err
-	}
-
-	return f.GetTerm(term), nil
+	return NewFacet(name)
 }
 
 func (idx *Index) SetData(data ...any) error {
@@ -86,7 +73,6 @@ func (idx *Index) SetData(data ...any) error {
 		}
 		idx.Data = append(idx.Data, d...)
 	}
-
 	idx.CollectTerms()
 	return nil
 }
@@ -113,7 +99,6 @@ func NewIndexFromReader(r io.Reader) (*Index, error) {
 }
 
 func NewIndexFromFiles(cfg string) (*Index, error) {
-
 	idx := &Index{}
 
 	f, err := os.Open(cfg)

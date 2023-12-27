@@ -9,15 +9,30 @@ import (
 )
 
 func TestRoaringTerms(t *testing.T) {
-	f, err := idx.GetFacet("tags")
-	if err != nil {
-		t.Error(err)
-	}
-	term := f.GetTerm("abo")
+	f := idx.GetFacet("tags")
+	term := f.GetItem("abo")
 	r := term.Bitmap()
 	if len(r.ToArray()) != 416 {
 		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 416)
 	}
+}
+
+func TestItemsList(t *testing.T) {
+	f := idx.GetFacet("tags")
+	if f.Len() != len(f.Items) {
+		t.Errorf("got %d, expected %d\n", f.Len(), len(f.Items))
+	}
+}
+
+func TestFuzzyFindItem(t *testing.T) {
+	f := idx.GetFacet("tags")
+	m := f.FuzzyFindItem("ang")
+	if len(m) != 15 {
+		t.Errorf("got %d, expected 15", len(m))
+	}
+	//for _, i := range m {
+	//fmt.Printf("%#v\n", i.Match)
+	//}
 }
 
 func TestRoaringFilter(t *testing.T) {
@@ -60,11 +75,8 @@ func testFilters(q url.Values) {
 }
 
 func getRoaringAbo(t *testing.T) *roaring.Bitmap {
-	f, err := idx.GetFacet("tags")
-	if err != nil {
-		t.Error(err)
-	}
-	term := f.GetTerm("abo")
+	f := idx.GetFacet("tags")
+	term := f.GetItem("abo")
 	r := term.Bitmap()
 	if len(r.ToArray()) != 416 {
 		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 416)
@@ -73,11 +85,8 @@ func getRoaringAbo(t *testing.T) *roaring.Bitmap {
 }
 
 func getRoaringDnr(t *testing.T) *roaring.Bitmap {
-	f, err := idx.GetFacet("tags")
-	if err != nil {
-		t.Error(err)
-	}
-	term := f.GetTerm("dnr")
+	f := idx.GetFacet("tags")
+	term := f.GetItem("dnr")
 	r := term.Bitmap()
 	if len(r.ToArray()) != 2237 {
 		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 2237)

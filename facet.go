@@ -1,44 +1,99 @@
 package facet
 
 import (
-	"net/url"
-
 	"github.com/RoaringBitmap/roaring"
+	"github.com/sahilm/fuzzy"
 	"github.com/spf13/cast"
 )
 
 type Facet struct {
-	Attribute string           `json:"attribute"`
-	Items     map[string]*Term `json:"items,omitempty"`
-	Operator  string           `json:"operator,omitempty"`
+	Attribute string  `json:"attribute"`
+	Items     []*Term `json:"items,omitempty"`
+	Operator  string  `json:"operator,omitempty"`
 }
 
 type Term struct {
-	Value string `json:"value"`
-	Label string `json:"label"`
-	Count int    `json:"count"`
-	items []uint32
+	Value       string `json:"value"`
+	Label       string `json:"label"`
+	Count       int    `json:"count"`
+	items       []uint32
+	fuzzy.Match `json:"-"`
 }
 
 func NewFacet(name string) *Facet {
 	return &Facet{
 		Attribute: name,
 		Operator:  "or",
-		Items:     make(map[string]*Term),
 	}
 }
 
-func (f *Facet) GetTerm(term string) *Term {
-	if t, ok := f.Items[term]; ok {
-		return t
+func (f *Facet) GetItem(term string) *Term {
+	for _, item := range f.Items {
+		if term == item.Value {
+			return item
+		}
 	}
-	return NewTerm(term, []string{})
+	return f.AddItem(term)
+}
+
+func (f *Facet) ListItems() []string {
+	var items []string
+	for _, item := range f.Items {
+		items = append(items, item.Value)
+	}
+	return items
+}
+
+func (f *Facet) AddItem(term string, ids ...string) *Term {
+	for _, i := range f.Items {
+		if term == i.Value {
+			i.AddItems(ids...)
+			return i
+		}
+	}
+	item := NewTerm(term, ids)
+	f.Items = append(f.Items, item)
+	return item
+}
+
+func (f *Facet) CollectItems(data []map[string]any) *Facet {
+	for i, item := range data {
+		if terms, ok := item[f.Attribute]; ok {
+			for _, term := range terms.([]any) {
+				f.AddItem(cast.ToString(term), cast.ToString(i))
+			}
+		}
+	}
+	return f
+}
+
+func (f *Facet) FuzzyFindItem(term string) []*Term {
+	matches := f.FuzzyMatches(term)
+	items := make([]*Term, len(matches))
+	for i, match := range matches {
+		item := f.Items[match.Index]
+		item.Match = match
+		items[i] = item
+	}
+	return items
+}
+
+func (f *Facet) FuzzyMatches(term string) fuzzy.Matches {
+	return fuzzy.FindFrom(term, f)
+}
+
+func (f *Facet) String(i int) string {
+	return f.Items[i].Value
+}
+
+func (f *Facet) Len() int {
+	return len(f.Items)
 }
 
 func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	var bits []*roaring.Bitmap
 	for _, filter := range filters {
-		term := f.GetTerm(filter)
+		term := f.GetItem(filter)
 		bits = append(bits, term.Bitmap())
 	}
 
@@ -50,29 +105,21 @@ func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	}
 }
 
-func collectFacetValues(name string, data []map[string]any) url.Values {
-	facet := make(url.Values)
-	for i, item := range data {
-		if terms, ok := item[name]; ok {
-			for _, term := range terms.([]any) {
-				facet.Add(cast.ToString(term), cast.ToString(i))
-			}
-		}
-	}
-	return facet
-}
-
 func NewTerm(name string, vals []string) *Term {
 	term := &Term{
 		Value: name,
 		Label: name,
-		Count: len(vals),
-		items: make([]uint32, len(vals)),
 	}
-	for i, val := range vals {
-		term.items[i] = cast.ToUint32(val)
-	}
+	term.AddItems(vals...)
 	return term
+}
+
+func (t *Term) AddItems(vals ...string) *Term {
+	for _, val := range vals {
+		t.items = append(t.items, cast.ToUint32(val))
+	}
+	t.Count = len(t.items)
+	return t
 }
 
 func (t *Term) Bitmap() *roaring.Bitmap {
