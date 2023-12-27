@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/ohzqq/facet"
 	"github.com/samber/lo"
@@ -23,7 +24,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 
-		var q any
+		var q string
 		var hasFilter bool
 		if cmd.Flags().Changed("query") {
 			q, err = cmd.Flags().GetString("query")
@@ -31,6 +32,18 @@ var rootCmd = &cobra.Command{
 				hasFilter = false
 			}
 			hasFilter = true
+		}
+
+		if cmd.Flags().Changed("dir") {
+			dir, err := cmd.Flags().GetString("dir")
+			if err != nil {
+				log.Fatal(err)
+			}
+			m, err := filepath.Glob(filepath.Join(dir, "/*"))
+			if err != nil {
+				log.Fatal(err)
+			}
+			dataFiles = m
 		}
 
 		if cmd.Flags().Changed("config") {
@@ -97,7 +110,8 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "index config file in json format")
-	rootCmd.PersistentFlags().StringSliceVarP(&dataFiles, "data", "d", []string{}, "data to index")
+	rootCmd.PersistentFlags().StringSliceVarP(&dataFiles, "input", "i", []string{}, "data to index")
+	rootCmd.PersistentFlags().StringP("dir", "d", "", "data dir")
 	rootCmd.PersistentFlags().StringP("query", "q", "", "encoded query string")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
