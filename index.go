@@ -54,11 +54,11 @@ func (idx *Index) Filter(q any) *Index {
 
 func (idx *Index) CollectTerms() *Index {
 	for name, facet := range idx.Facets {
-		facet.Terms = make(map[string]*Term)
+		facet.Items = make(map[string]*Term)
 
 		vals := collectFacetValues(name, idx.Data)
 		for term, ids := range vals {
-			facet.Terms[term] = NewTerm(term, ids)
+			facet.Items[term] = NewTerm(term, ids)
 		}
 	}
 	return idx
@@ -68,7 +68,7 @@ func (idx *Index) GetFacet(name string) (*Facet, error) {
 	if f, ok := idx.Facets[name]; ok {
 		return f, nil
 	}
-	return &Facet{}, errors.New("no such facet")
+	return NewFacet(name), errors.New("no such facet")
 }
 
 func (idx *Index) GetTerm(facet, term string) (*Term, error) {
@@ -117,11 +117,12 @@ func NewIndexFromFiles(cfg string, data ...string) (*Index, error) {
 	idx := &Index{}
 
 	if Exist(cfg) {
-		data, err := os.ReadFile(cfg)
+		f, err := os.Open(cfg)
 		if err != nil {
 			return nil, err
 		}
-		idx, err = unmarshalIdx(data)
+		defer f.Close()
+		idx, err = NewIndexFromReader(f)
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +207,7 @@ func parseCfg(c any) (*Index, error) {
 func parseFacetMap(f any) map[string]*Facet {
 	facets := make(map[string]*Facet)
 	for name, agg := range cast.ToStringMap(f) {
-		facet := NewFacet()
+		facet := NewFacet(name)
 		err := mapstructure.Decode(agg, facet)
 		if err != nil {
 			log.Fatal(err)

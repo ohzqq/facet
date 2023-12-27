@@ -8,28 +8,31 @@ import (
 )
 
 type Facet struct {
-	Terms    map[string]*Term `json:"terms,omitempty"`
-	Operator string           `json:"operator,omitempty"`
+	Attribute string           `json:"attribute"`
+	Items     map[string]*Term `json:"items,omitempty"`
+	Operator  string           `json:"operator,omitempty"`
 }
 
 type Term struct {
 	Value string `json:"value"`
+	Label string `json:"label"`
 	Count int    `json:"count"`
 	items []uint32
 }
 
-func NewFacet() *Facet {
+func NewFacet(name string) *Facet {
 	return &Facet{
-		Operator: "or",
-		Terms:    make(map[string]*Term),
+		Attribute: name,
+		Operator:  "or",
+		Items:     make(map[string]*Term),
 	}
 }
 
 func (f *Facet) GetTerm(term string) *Term {
-	if t, ok := f.Terms[term]; ok {
+	if t, ok := f.Items[term]; ok {
 		return t
 	}
-	return &Term{Value: term}
+	return NewTerm(term, []string{})
 }
 
 func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
@@ -62,6 +65,7 @@ func collectFacetValues(name string, data []map[string]any) url.Values {
 func NewTerm(name string, vals []string) *Term {
 	term := &Term{
 		Value: name,
+		Label: name,
 		Count: len(vals),
 		items: make([]uint32, len(vals)),
 	}
