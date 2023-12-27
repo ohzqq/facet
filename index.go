@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
@@ -34,8 +33,6 @@ func New(c any, data ...any) (*Index, error) {
 		return idx, errors.New("data is required")
 	}
 
-	idx.CollectTerms()
-
 	if idx.Filters != nil {
 		return Filter(idx), nil
 	}
@@ -44,10 +41,11 @@ func New(c any, data ...any) (*Index, error) {
 }
 
 func (idx *Index) Filter(q any) *Index {
-	filters, err := parseFilters(q)
+	filters, err := ParseFilters(q)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	idx.Filters = filters
 	return Filter(idx)
 }
@@ -88,6 +86,8 @@ func (idx *Index) SetData(data ...any) error {
 		}
 		idx.Data = append(idx.Data, d...)
 	}
+
+	idx.CollectTerms()
 	return nil
 }
 
@@ -112,26 +112,21 @@ func NewIndexFromReader(r io.Reader) (*Index, error) {
 	return idx, nil
 }
 
-func NewIndexFromFiles(cfg string, data ...string) (*Index, error) {
+func NewIndexFromFiles(cfg string) (*Index, error) {
 
 	idx := &Index{}
 
-	if Exist(cfg) {
-		f, err := os.Open(cfg)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		idx, err = NewIndexFromReader(f)
-		if err != nil {
-			return nil, err
-		}
+	f, err := os.Open(cfg)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	idx, err = NewIndexFromReader(f)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(data) > 0 {
-		idx.SetData(lo.ToAnySlice(data)...)
-	}
-	idx.CollectTerms()
 	return idx, nil
 }
 
@@ -148,14 +143,11 @@ func NewDataFromFiles(d ...string) ([]map[string]any, error) {
 }
 
 func dataFromFile(d string) ([]map[string]any, error) {
-	if Exist(d) {
-		data, err := os.ReadFile(d)
-		if err != nil {
-			return nil, err
-		}
-		return unmarshalData(data)
+	data, err := os.ReadFile(d)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("can't read data file")
+	return unmarshalData(data)
 }
 
 func NewIndexFromString(d string) (*Index, error) {

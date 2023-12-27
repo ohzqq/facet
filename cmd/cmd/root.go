@@ -51,7 +51,11 @@ var rootCmd = &cobra.Command{
 			case "":
 				log.Fatalf("no config provided")
 			default:
-				idx, err = facet.New(cfgFile, lo.ToAnySlice(dataFiles)...)
+				idx, err = facet.NewIndexFromFiles(cfgFile)
+				if err != nil {
+					log.Fatal(err)
+				}
+				err = idx.SetData(lo.ToAnySlice(dataFiles)...)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -68,28 +72,8 @@ var rootCmd = &cobra.Command{
 			idx = idx.Filter(q)
 		}
 
-		println(len(idx.Data))
-		//println(idx.String())
-		//stdin := os.Stdin
-		//stat, err := stdin.Stat()
-		//if err != nil {
-		//log.Fatal(err)
-		//}
-		//println(stat.Size())
-		//if stat.Size() > 0 {
-		//err = json.NewDecoder(in).Decode(idx)
-		//}
-		//filters := make(url.Values)
-		//filters.Add("authors", "Alice Winters")
-		//filters.Add("tags", "abo")
-
-		//ids := idx.Filter(filters)
-		//fmt.Printf("%#V\n", len(ids))
-		//d, err = json.Marshal(facets)
-		//if err != nil {
-		//log.Fatal(err)
-		//}
-		//println(string(d))
+		//println(len(idx.Data))
+		println(idx.String())
 	},
 }
 
@@ -113,7 +97,6 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceVarP(&dataFiles, "input", "i", []string{}, "data to index")
 	rootCmd.PersistentFlags().StringP("dir", "d", "", "data dir")
 	rootCmd.PersistentFlags().StringP("query", "q", "", "encoded query string")
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.

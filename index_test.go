@@ -15,9 +15,13 @@ var books []map[string]any
 
 const numBooks = 7174
 
+const testData = `testdata/data-dir/audiobooks.json`
+const testCfgFile = `testdata/config.json`
+const testCfgFileData = `testdata/config-with-data.json`
+
 func init() {
 	var err error
-	idx, err = New("testdata/config.json", "testdata/audiobooks.json")
+	idx, err = New(testCfgFile, testData)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,7 +46,7 @@ func TestNewIdxFromString(t *testing.T) {
 		t.Errorf("got %d facets, expected 2", len(idx.Facets))
 	}
 
-	d, err := os.ReadFile("testdata/audiobooks.json")
+	d, err := os.ReadFile(testData)
 	if err != nil {
 		t.Error(err)
 	}
@@ -75,7 +79,7 @@ func TestNewIdxFromMap(t *testing.T) {
 }
 
 func loadData(t *testing.T) []map[string]any {
-	d, err := os.ReadFile("testdata/audiobooks.json")
+	d, err := os.ReadFile(testData)
 	if err != nil {
 		t.Error(err)
 	}

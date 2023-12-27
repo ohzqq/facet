@@ -17,12 +17,12 @@ func Filter(idx *Index) *Index {
 	}
 
 	filtered := roaring.ParOr(4, bits...)
-
 	ids := filtered.ToArray()
-	data := FilteredItems(idx.Data, lo.ToAnySlice(ids))
+
 	res := &Index{
-		Data:   data,
-		Facets: idx.Facets,
+		Data:    FilteredItems(idx.Data, lo.ToAnySlice(ids)),
+		Facets:  idx.Facets,
+		Filters: idx.Filters,
 	}
 	return res.CollectTerms()
 }
@@ -55,11 +55,7 @@ func FilterBytes(val []byte) (url.Values, error) {
 	return filters, nil
 }
 
-func FilterAny(f any) (url.Values, error) {
-	return parseFilters(f)
-}
-
-func parseFilters(f any) (url.Values, error) {
+func ParseFilters(f any) (url.Values, error) {
 	filters := make(map[string][]string)
 	var err error
 	switch val := f.(type) {

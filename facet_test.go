@@ -43,7 +43,7 @@ func TestRoaringFilters(t *testing.T) {
 	vals.Add("tags", "dnr")
 	vals.Add("authors", "Alice Winters")
 	vals.Add("authors", "Amy Lane")
-	q, err := parseFilters(vals)
+	q, err := ParseFilters(vals)
 	if err != nil {
 		t.Error(err)
 	}
