@@ -13,9 +13,9 @@ type Facet struct {
 }
 
 type Term struct {
-	Value string   `json:"value"`
-	Count int      `json:"count"`
-	items []uint32 `json:"items"`
+	Value string `json:"value"`
+	Count int    `json:"count"`
+	items []uint32
 }
 
 func NewFacet() *Facet {

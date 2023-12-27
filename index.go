@@ -122,7 +122,7 @@ func NewIndexFromFiles(cfg string, data ...string) (*Index, error) {
 		if err != nil {
 			return nil, err
 		}
-		idx, err = unmarshalCfg(data)
+		idx, err = unmarshalIdx(data)
 		if err != nil {
 			return nil, err
 		}
@@ -133,6 +133,7 @@ func NewIndexFromFiles(cfg string, data ...string) (*Index, error) {
 		return nil, err
 	}
 	idx.Data = d
+	idx.CollectTerms()
 	return idx, nil
 }
 
@@ -160,7 +161,15 @@ func dataFromFile(d string) ([]map[string]any, error) {
 }
 
 func NewIndexFromString(d string) (*Index, error) {
-	return unmarshalCfg([]byte(d))
+	idx, err := unmarshalIdx([]byte(d))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(idx.Data) > 0 {
+		idx.CollectTerms()
+	}
+	return idx, nil
 }
 
 func NewDataFromString(d string) ([]map[string]any, error) {
@@ -173,18 +182,17 @@ func NewIndexFromMap(d map[string]any) (*Index, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(idx.Data) > 0 {
+		idx.CollectTerms()
+	}
 	return idx, nil
 }
 
 func parseCfg(c any) (*Index, error) {
 	cfg := &Index{}
-	var err error
 	switch val := c.(type) {
 	case []byte:
-		return unmarshalCfg(val)
-		if err != nil {
-			return nil, err
-		}
+		return unmarshalIdx(val)
 	case string:
 		if Exist(val) {
 			return NewIndexFromFiles(val)
@@ -193,17 +201,6 @@ func parseCfg(c any) (*Index, error) {
 		}
 	case map[string]any:
 		return NewIndexFromMap(val)
-		if f, ok := val["facets"]; ok {
-			cfg.Facets = parseFacetMap(f)
-		} else {
-			return cfg, errors.New("facets not found in config")
-		}
-		if data, ok := val["data"]; ok {
-			err := cfg.SetData(data)
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	return cfg, nil
@@ -238,14 +235,14 @@ func parseData(d any) ([]map[string]any, error) {
 	return nil, errors.New("data couldn't be parsed")
 }
 
-func unmarshalCfg(d []byte) (*Index, error) {
-	cfg := &Index{}
-	err := json.Unmarshal(d, &cfg)
+func unmarshalIdx(d []byte) (*Index, error) {
+	idx := &Index{}
+	err := json.Unmarshal(d, &idx)
 	if err != nil {
-		return cfg, err
+		return idx, err
 	}
 
-	return cfg, nil
+	return idx, nil
 }
 
 func unmarshalData(d []byte) ([]map[string]any, error) {
