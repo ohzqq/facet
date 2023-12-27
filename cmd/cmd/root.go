@@ -1,59 +1,77 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 
 	"github.com/ohzqq/facet"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	cfgFile  string
-	dataFile string
-	idx      = &facet.Index{}
+	cfgFile   string
+	dataFiles []string
+	idx       = &facet.Index{}
 )
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "facet",
 	Short: "calculate facets for search",
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		if cfgFile != "" {
-			d, err := os.ReadFile(cfgFile)
-			if err != nil {
-				log.Fatal(err)
-			}
-			err = json.Unmarshal(d, idx)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-		if dataFile == "" {
-			log.Fatalf("no index data provided")
-		}
-		d, err := os.ReadFile(dataFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = json.Unmarshal(d, &idx.Data)
-		if err != nil {
-			log.Fatal(err)
-		}
-		idx.Facets()
+		var err error
 
-		filters := make(url.Values)
-		filters.Add("authors", "Alice Winters")
+		var q any
+		var hasFilter bool
+		if cmd.Flags().Changed("query") {
+			q, err = cmd.Flags().GetString("query")
+			if err != nil {
+				hasFilter = false
+			}
+			hasFilter = true
+		}
+
+		if cmd.Flags().Changed("config") {
+			switch cfgFile {
+			case "":
+				log.Fatalf("no config provided")
+			default:
+				idx, err = facet.New(cfgFile, lo.ToAnySlice(dataFiles)...)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		} else {
+			in := cmd.InOrStdin()
+			idx, err = facet.NewIndexFromReader(in)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		if hasFilter {
+			idx = idx.Filter(q)
+		}
+
+		println(len(idx.Data))
+		//println(idx.String())
+		//stdin := os.Stdin
+		//stat, err := stdin.Stat()
+		//if err != nil {
+		//log.Fatal(err)
+		//}
+		//println(stat.Size())
+		//if stat.Size() > 0 {
+		//err = json.NewDecoder(in).Decode(idx)
+		//}
+		//filters := make(url.Values)
+		//filters.Add("authors", "Alice Winters")
 		//filters.Add("tags", "abo")
 
-		ids := idx.Filter(filters)
-		fmt.Printf("%#V\n", len(ids))
+		//ids := idx.Filter(filters)
+		//fmt.Printf("%#V\n", len(ids))
 		//d, err = json.Marshal(facets)
 		//if err != nil {
 		//log.Fatal(err)
@@ -78,9 +96,9 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "index config")
-	rootCmd.PersistentFlags().StringVarP(&idx.Name, "name", "n", "", "index name")
-	rootCmd.PersistentFlags().StringVarP(&dataFile, "data", "d", "", "data to index")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "index config file in json format")
+	rootCmd.PersistentFlags().StringSliceVarP(&dataFiles, "data", "d", []string{}, "data to index")
+	rootCmd.PersistentFlags().StringP("query", "q", "", "encoded query string")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 

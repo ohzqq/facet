@@ -21,20 +21,15 @@ func TestRoaringTerms(t *testing.T) {
 }
 
 func TestRoaringFilter(t *testing.T) {
-	//books := idx.Roar()
 	abo := getRoaringAbo(t)
 	dnr := getRoaringDnr(t)
 
-	//or1 := roaring.And(books, abo)
-	//or2 := roaring.And(books, dnr)
-	//or := roaring.Or(or1, or2)
 	or := roaring.ParOr(4, abo, dnr)
 	orC := len(or.ToArray())
 	if orC != 2269 {
 		t.Errorf("got %d, expected %d\n", orC, 2269)
 	}
 
-	//and1 := roaring.And(books, abo)
 	and := roaring.ParAnd(4, abo, dnr)
 	andC := len(and.ToArray())
 	if andC != 384 {
@@ -46,8 +41,8 @@ func TestRoaringFilters(t *testing.T) {
 	vals := make(url.Values)
 	vals.Add("tags", "abo")
 	vals.Add("tags", "dnr")
-	vals.Add("authors", "-Alice Winters")
-	//vals.Add("authors", "Amy Lane")
+	vals.Add("authors", "Alice Winters")
+	vals.Add("authors", "Amy Lane")
 	q, err := parseFilters(vals)
 	if err != nil {
 		t.Error(err)

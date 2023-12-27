@@ -1,24 +1,33 @@
 package facet
 
 import (
-	"fmt"
 	"net/url"
 
+	"github.com/RoaringBitmap/roaring"
+	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
-func Filter(data []map[string]any, cfg map[string]any, filters url.Values) ([]map[string]any, map[string]any) {
-	idx := &Index{
-		Data: data,
+func Filter(idx *Index) *Index {
+	var bits []*roaring.Bitmap
+	for name, filters := range idx.Filters {
+		if facet, ok := idx.Facets[name]; ok {
+			bits = append(bits, facet.Filter(filters...))
+		}
 	}
-	if f, ok := cfg["facets"]; ok {
-		idx.Facets = parseFacetMap(f)
+
+	filtered := roaring.ParOr(4, bits...)
+
+	ids := filtered.ToArray()
+	data := FilteredItems(idx.Data, lo.ToAnySlice(ids))
+	res := &Index{
+		Data:   data,
+		Facets: idx.Facets,
 	}
-	fmt.Printf("%#v\n", idx)
-	return data, cfg
+	return res.CollectTerms()
 }
 
-func FilterItems(data []map[string]any, ids []any) []map[string]any {
+func FilteredItems(data []map[string]any, ids []any) []map[string]any {
 	items := make([]map[string]any, len(ids))
 	for item, _ := range data {
 		for i, id := range ids {
@@ -30,6 +39,26 @@ func FilterItems(data []map[string]any, ids []any) []map[string]any {
 	return items
 }
 
+func FilterString(val string) (url.Values, error) {
+	q, err := url.ParseQuery(val)
+	if err != nil {
+		return nil, err
+	}
+	return q, nil
+}
+
+func FilterBytes(val []byte) (url.Values, error) {
+	filters, err := cast.ToStringMapStringSliceE(string(val))
+	if err != nil {
+		return nil, err
+	}
+	return filters, nil
+}
+
+func FilterAny(f any) (url.Values, error) {
+	return parseFilters(f)
+}
+
 func parseFilters(f any) (url.Values, error) {
 	filters := make(map[string][]string)
 	var err error
@@ -37,16 +66,9 @@ func parseFilters(f any) (url.Values, error) {
 	case url.Values:
 		return val, nil
 	case []byte:
-		filters, err = cast.ToStringMapStringSliceE(string(val))
-		if err != nil {
-			return nil, err
-		}
+		return FilterBytes(val)
 	case string:
-		q, err := url.ParseQuery(val)
-		if err != nil {
-			return nil, err
-		}
-		return q, nil
+		return FilterString(val)
 	default:
 		filters, err = cast.ToStringMapStringSliceE(val)
 		if err != nil {

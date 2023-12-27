@@ -3,19 +3,20 @@ package facet
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/url"
 	"os"
 
-	"github.com/RoaringBitmap/roaring"
 	"github.com/mitchellh/mapstructure"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
 type Index struct {
-	Data   []map[string]any  `json:"data,omitempty"`
-	Facets map[string]*Facet `json:"facets"`
+	Data    []map[string]any  `json:"data,omitempty"`
+	Facets  map[string]*Facet `json:"facets"`
+	Filters url.Values        `json:"filters"`
 }
 
 func New(c any, data ...any) (*Index, error) {
@@ -35,31 +36,20 @@ func New(c any, data ...any) (*Index, error) {
 
 	idx.CollectTerms()
 
+	if idx.Filters != nil {
+		return Filter(idx), nil
+	}
+
 	return idx, nil
 }
 
-func (idx *Index) Filter(q url.Values) *Index {
-	println(q.Encode())
-	if len(q) < 1 {
-		return idx
+func (idx *Index) Filter(q any) *Index {
+	filters, err := parseFilters(q)
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	var bits []*roaring.Bitmap
-	for name, filters := range q {
-		if facet, ok := idx.Facets[name]; ok {
-			bits = append(bits, facet.Filter(filters...))
-		}
-	}
-
-	filtered := roaring.ParOr(4, bits...)
-
-	ids := filtered.ToArray()
-	data := FilterItems(idx.Data, lo.ToAnySlice(ids))
-	res := &Index{
-		Data:   data,
-		Facets: idx.Facets,
-	}
-	return res.CollectTerms()
+	idx.Filters = filters
+	return Filter(idx)
 }
 
 func (idx *Index) CollectTerms() *Index {
@@ -113,6 +103,15 @@ func (idx *Index) JSON() []byte {
 	return d
 }
 
+func NewIndexFromReader(r io.Reader) (*Index, error) {
+	idx := &Index{}
+	err := json.NewDecoder(r).Decode(idx)
+	if err != nil {
+		return idx, err
+	}
+	return idx, nil
+}
+
 func NewIndexFromFiles(cfg string, data ...string) (*Index, error) {
 
 	idx := &Index{}
@@ -128,11 +127,9 @@ func NewIndexFromFiles(cfg string, data ...string) (*Index, error) {
 		}
 	}
 
-	d, err := NewDataFromFiles(data...)
-	if err != nil {
-		return nil, err
+	if len(data) > 0 {
+		idx.SetData(lo.ToAnySlice(data)...)
 	}
-	idx.Data = d
 	idx.CollectTerms()
 	return idx, nil
 }
