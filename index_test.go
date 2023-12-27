@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"testing"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 var idx = &Index{}
@@ -31,6 +33,47 @@ func TestIdxCfg(t *testing.T) {
 	//fmt.Printf("%v\n", cfg)
 }
 
+func TestNewIdxFromString(t *testing.T) {
+	idx, err := parseCfg(testCfg)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(idx.Facets) != 2 {
+		t.Errorf("got %d facets, expected 2", len(idx.Facets))
+	}
+
+	d, err := os.ReadFile("testdata/audiobooks.json")
+	if err != nil {
+		t.Error(err)
+	}
+
+	data, err := NewDataFromString(string(d))
+	if err != nil {
+		t.Error(err)
+	}
+	if len(data) != len(books) {
+		t.Errorf("got %d, expected 7174\v", len(data))
+	}
+}
+
+func TestNewIdxFromMap(t *testing.T) {
+	d := make(map[string]any)
+	err := mapstructure.Decode(idx, &d)
+	if err != nil {
+		t.Error(err)
+	}
+	i, err := NewIndexFromMap(d)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(i.Data) != len(books) {
+		t.Errorf("got %d, expected 7174\v", len(i.Data))
+	}
+	if len(i.Facets) != 2 {
+		t.Errorf("got %d facets, expected 2", len(i.Facets))
+	}
+}
+
 func loadData(t *testing.T) []map[string]any {
 	d, err := os.ReadFile("testdata/audiobooks.json")
 	if err != nil {
@@ -50,13 +93,12 @@ func loadData(t *testing.T) []map[string]any {
 
 func TestData(t *testing.T) {
 	books := loadData(t)
-	println(len(books))
+	if len(books) != 7174 {
+		t.Errorf("got %d, expected 7174\v", len(books))
+	}
 }
 
-const testCfg = `
-{
-	"name": "audiobooks",
-	"key": "id",
+const testCfg = `{
 	"facets": {
 		"tags": {
 			"operator": "and"

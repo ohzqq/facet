@@ -159,11 +159,21 @@ func dataFromFile(d string) ([]map[string]any, error) {
 	return nil, errors.New("can't read data file")
 }
 
-func Exist(path string) bool {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		return false
+func NewIndexFromString(d string) (*Index, error) {
+	return unmarshalCfg([]byte(d))
+}
+
+func NewDataFromString(d string) ([]map[string]any, error) {
+	return unmarshalData([]byte(d))
+}
+
+func NewIndexFromMap(d map[string]any) (*Index, error) {
+	idx := &Index{}
+	err := mapstructure.Decode(d, idx)
+	if err != nil {
+		return nil, err
 	}
-	return true
+	return idx, nil
 }
 
 func parseCfg(c any) (*Index, error) {
@@ -179,9 +189,10 @@ func parseCfg(c any) (*Index, error) {
 		if Exist(val) {
 			return NewIndexFromFiles(val)
 		} else {
-			return unmarshalCfg([]byte(val))
+			return NewIndexFromString(val)
 		}
 	case map[string]any:
+		return NewIndexFromMap(val)
 		if f, ok := val["facets"]; ok {
 			cfg.Facets = parseFacetMap(f)
 		} else {
@@ -198,20 +209,10 @@ func parseCfg(c any) (*Index, error) {
 	return cfg, nil
 }
 
-func unmarshalCfg(d []byte) (*Index, error) {
-	cfg := &Index{}
-	err := json.Unmarshal(d, &cfg)
-	if err != nil {
-		return cfg, err
-	}
-
-	return cfg, nil
-}
-
 func parseFacetMap(f any) map[string]*Facet {
 	facets := make(map[string]*Facet)
 	for name, agg := range cast.ToStringMap(f) {
-		facet := NewFacet(name)
+		facet := NewFacet()
 		err := mapstructure.Decode(agg, facet)
 		if err != nil {
 			log.Fatal(err)
@@ -237,6 +238,16 @@ func parseData(d any) ([]map[string]any, error) {
 	return nil, errors.New("data couldn't be parsed")
 }
 
+func unmarshalCfg(d []byte) (*Index, error) {
+	cfg := &Index{}
+	err := json.Unmarshal(d, &cfg)
+	if err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
+}
+
 func unmarshalData(d []byte) ([]map[string]any, error) {
 	var data []map[string]any
 	err := json.Unmarshal(d, &data)
@@ -244,4 +255,11 @@ func unmarshalData(d []byte) ([]map[string]any, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+func Exist(path string) bool {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
 }
