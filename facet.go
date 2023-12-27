@@ -1,8 +1,11 @@
 package facet
 
 import (
+	"strings"
+
 	"github.com/RoaringBitmap/roaring"
 	"github.com/sahilm/fuzzy"
+	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
@@ -10,12 +13,14 @@ type Facet struct {
 	Attribute string  `json:"attribute"`
 	Items     []*Term `json:"items,omitempty"`
 	Operator  string  `json:"operator,omitempty"`
+	Sep       string  `json:"-"`
 }
 
 type Term struct {
-	Value       string `json:"value"`
-	Label       string `json:"label"`
-	Count       int    `json:"count"`
+	Value       string  `json:"value"`
+	Label       string  `json:"label"`
+	Count       int     `json:"count"`
+	Items       []*Term `json:"-"`
 	items       []uint32
 	fuzzy.Match `json:"-"`
 }
@@ -24,6 +29,7 @@ func NewFacet(name string) *Facet {
 	return &Facet{
 		Attribute: name,
 		Operator:  "or",
+		Sep:       ".",
 	}
 }
 
@@ -65,6 +71,15 @@ func (f *Facet) CollectItems(data []map[string]any) *Facet {
 		}
 	}
 	return f
+}
+
+func (f *Facet) HierarchicalItems(sep string) []*Term {
+	fn := func(item *Term, i int) bool {
+		b := strings.Contains(item.Value, sep)
+		return b
+	}
+	items := lo.Filter(f.Items, fn)
+	return items
 }
 
 func (f *Facet) FuzzyFindItem(term string) []*Term {
@@ -112,6 +127,10 @@ func NewTerm(name string, vals []string) *Term {
 	}
 	term.AddItems(vals...)
 	return term
+}
+
+func TermIsHierarchical(name, sep string) bool {
+	return strings.Contains(name, sep)
 }
 
 func (t *Term) AddItems(vals ...string) *Term {

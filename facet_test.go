@@ -26,13 +26,24 @@ func TestItemsList(t *testing.T) {
 
 func TestFuzzyFindItem(t *testing.T) {
 	f := idx.GetFacet("tags")
-	m := f.FuzzyFindItem("ang")
-	if len(m) != 15 {
-		t.Errorf("got %d, expected 15", len(m))
+	m := f.FuzzyFindItem("holiday")
+	if len(m) != 5 {
+		t.Errorf("got %d, expected 5", len(m))
 	}
 	//for _, i := range m {
 	//fmt.Printf("%#v\n", i.Match)
 	//}
+}
+
+func TestHierarchicalItems(t *testing.T) {
+	f := idx.GetFacet("tags")
+	items := f.HierarchicalItems(".")
+	if len(f.Items) == len(items) {
+		t.Errorf("got %d, original %d\n", len(items), len(f.Items))
+	}
+	for _, i := range items {
+		fmt.Printf("%#v\n", i)
+	}
 }
 
 func TestRoaringFilter(t *testing.T) {
