@@ -1,6 +1,7 @@
 package facet
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -78,6 +79,22 @@ func (idx *Index) SetData(data ...any) error {
 	return nil
 }
 
+func (idx *Index) DecodeCfg(r io.Reader) error {
+	err := json.NewDecoder(r).Decode(idx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (idx *Index) DecodeData(r io.Reader) error {
+	err := json.NewDecoder(r).Decode(&idx.Data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (idx *Index) String() string {
 	return string(idx.JSON())
 }
@@ -90,13 +107,13 @@ func (idx *Index) JSON() []byte {
 	return d
 }
 
-func NewIndexFromReader(r io.Reader) (*Index, error) {
-	idx := &Index{}
-	err := json.NewDecoder(r).Decode(idx)
+func DecodeData(r io.Reader) ([]map[string]any, error) {
+	var data []map[string]any
+	err := json.NewDecoder(r).Decode(&data)
 	if err != nil {
-		return idx, err
+		return data, err
 	}
-	return idx, nil
+	return data, nil
 }
 
 func NewIndexFromFiles(cfg string) (*Index, error) {
@@ -108,7 +125,7 @@ func NewIndexFromFiles(cfg string) (*Index, error) {
 	}
 	defer f.Close()
 
-	idx, err = NewIndexFromReader(f)
+	err = idx.DecodeCfg(f)
 	if err != nil {
 		return nil, err
 	}
@@ -129,15 +146,18 @@ func NewDataFromFiles(d ...string) ([]map[string]any, error) {
 }
 
 func dataFromFile(d string) ([]map[string]any, error) {
-	data, err := os.ReadFile(d)
+	data, err := os.Open(d)
 	if err != nil {
 		return nil, err
 	}
-	return unmarshalData(data)
+	defer data.Close()
+	return DecodeData(data)
 }
 
 func NewIndexFromString(d string) (*Index, error) {
-	idx, err := unmarshalIdx([]byte(d))
+	idx := &Index{}
+	buf := bytes.NewBufferString(d)
+	err := idx.DecodeCfg(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +169,8 @@ func NewIndexFromString(d string) (*Index, error) {
 }
 
 func NewDataFromString(d string) ([]map[string]any, error) {
-	return unmarshalData([]byte(d))
+	buf := bytes.NewBufferString(d)
+	return DecodeData(buf)
 }
 
 func NewIndexFromMap(d map[string]any) (*Index, error) {
@@ -168,7 +189,9 @@ func parseCfg(c any) (*Index, error) {
 	cfg := &Index{}
 	switch val := c.(type) {
 	case []byte:
-		return unmarshalIdx(val)
+		buf := bytes.NewBuffer(val)
+		err := cfg.DecodeCfg(buf)
+		return cfg, err
 	case string:
 		if Exist(val) {
 			return NewIndexFromFiles(val)
@@ -209,16 +232,6 @@ func parseData(d any) ([]map[string]any, error) {
 		return val, nil
 	}
 	return nil, errors.New("data couldn't be parsed")
-}
-
-func unmarshalIdx(d []byte) (*Index, error) {
-	idx := &Index{}
-	err := json.Unmarshal(d, &idx)
-	if err != nil {
-		return idx, err
-	}
-
-	return idx, nil
 }
 
 func unmarshalData(d []byte) ([]map[string]any, error) {

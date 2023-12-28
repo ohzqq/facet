@@ -62,7 +62,7 @@ var rootCmd = &cobra.Command{
 			}
 		} else {
 			in := cmd.InOrStdin()
-			idx, err = facet.NewIndexFromReader(in)
+			idx, err = facet.DecodeIndex(in)
 			if err != nil {
 				log.Fatal(err)
 			}
