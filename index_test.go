@@ -105,11 +105,11 @@ func TestData(t *testing.T) {
 const testCfg = `{
 	"facets": [
 		{
-			"attribute": "tags",
+			"attribute": ["tags"],
 			"operator": "and"
 		},
 		{
-			"attribute": "authors"
+			"attribute": ["authors"]
 		}
 	]
 }

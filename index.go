@@ -59,8 +59,10 @@ func (idx *Index) CollectTerms() *Index {
 
 func (idx *Index) GetFacet(name string) *Facet {
 	for _, facet := range idx.Facets {
-		if facet.Attribute == name {
-			return facet
+		for _, attr := range facet.Attribute {
+			if attr == name {
+				return facet
+			}
 		}
 	}
 	return NewFacet(name)
