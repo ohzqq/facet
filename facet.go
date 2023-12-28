@@ -112,10 +112,9 @@ func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 }
 
 type Term struct {
-	Value       string  `json:"value"`
-	Label       string  `json:"label"`
-	Count       int     `json:"count"`
-	Items       []*Term `json:"-"`
+	Value       string `json:"value"`
+	Label       string `json:"label"`
+	Count       int    `json:"count"`
 	belongsTo   []uint32
 	fuzzy.Match `json:"-"`
 }
@@ -129,24 +128,12 @@ func NewTerm(name string, vals []string) *Term {
 	return term
 }
 
-func TermIsHierarchical(name, sep string) bool {
-	return strings.Contains(name, sep)
-}
-
 func (t *Term) AddItems(vals ...string) *Term {
 	for _, val := range vals {
 		t.belongsTo = append(t.belongsTo, cast.ToUint32(val))
 	}
 	t.Count = len(t.belongsTo)
 	return t
-}
-
-func (t *Term) HasChildren(sep ...string) bool {
-	s := "."
-	if len(sep) > 0 {
-		s = sep[0]
-	}
-	return strings.Contains(t.Value, s) || len(t.Items) > 0
 }
 
 func (t *Term) Bitmap() *roaring.Bitmap {
