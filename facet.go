@@ -118,8 +118,10 @@ func (f *Facet) Len() int {
 func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	var bits []*roaring.Bitmap
 	for _, filter := range filters {
-		term := f.GetItem(filter)
-		bits = append(bits, term.Bitmap())
+		term := f.FuzzyFindItem(filter)
+		if len(term) < 1 {
+		}
+		bits = append(bits, term[0].Bitmap())
 	}
 
 	switch f.Operator {

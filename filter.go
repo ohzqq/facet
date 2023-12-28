@@ -13,9 +13,11 @@ import (
 // returns a new *Index.
 func Filter(idx *Index) *Index {
 	var bits []*roaring.Bitmap
-	for _, filters := range idx.Filters {
+	for name, filters := range idx.Filters {
 		for _, facet := range idx.Facets {
-			bits = append(bits, facet.Filter(filters...))
+			if facet.Attribute == name {
+				bits = append(bits, facet.Filter(filters...))
+			}
 		}
 	}
 
