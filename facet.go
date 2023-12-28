@@ -4,6 +4,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 	"github.com/sahilm/fuzzy"
 	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 )
 
 type Facet struct {
@@ -100,9 +101,9 @@ func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 
 	switch f.Operator {
 	case "and":
-		return roaring.ParAnd(4, bits...)
+		return roaring.ParAnd(viper.GetInt("workers"), bits...)
 	default:
-		return roaring.ParOr(4, bits...)
+		return roaring.ParOr(viper.GetInt("workers"), bits...)
 	}
 }
 

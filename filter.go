@@ -6,6 +6,7 @@ import (
 	"github.com/RoaringBitmap/roaring"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 )
 
 func Filter(idx *Index) *Index {
@@ -16,7 +17,7 @@ func Filter(idx *Index) *Index {
 		}
 	}
 
-	filtered := roaring.ParOr(4, bits...)
+	filtered := roaring.ParOr(viper.GetInt("workers"), bits...)
 	ids := filtered.ToArray()
 
 	res, err := New(

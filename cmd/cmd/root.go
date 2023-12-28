@@ -19,16 +19,30 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "facet",
+	Use:   "facet [<cfg>] [<data>] [<filters>]",
 	Short: "calculate facets for search",
+	Long: `facet aggregates data on specified fields, with option filters. 
+
+The command accepts stdin, flags, and positional arguments.
+
+If a config file has a "data" field no other argument or flag is required. 
+
+Without the "data" field, data must be specified through a flag or positional
+argument.
+
+By default, results are printed to stdout as json.
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetFlags(log.Lshortfile)
-		var err error
 
-		var q string
-		var hasFilter bool
+		var (
+			err       error
+			filters   string
+			hasFilter bool
+		)
+
 		if cmd.Flags().Changed("query") {
-			q, err = cmd.Flags().GetString("query")
+			filters, err = cmd.Flags().GetString("query")
 			if err != nil {
 				hasFilter = false
 			}
@@ -47,20 +61,33 @@ var rootCmd = &cobra.Command{
 			dataFiles = m
 		}
 
-		if cmd.Flags().Changed("config") {
-			switch cfgFile {
-			case "":
-				log.Fatalf("no config provided")
-			default:
-				idx, err = facet.NewIndexFromFiles(cfgFile)
-				if err != nil {
-					log.Fatal(err)
-				}
-				err = idx.SetData(lo.ToAnySlice(dataFiles)...)
-				if err != nil {
-					log.Fatalf("error with data files: %v\n", err)
-				}
+		if len(args) > 0 {
+			cfgFile = args[0]
+
+			if len(args) > 1 {
+				dataFiles = append(dataFiles, args[1])
 			}
+
+			if len(args) > 2 {
+				filters = args[2]
+			}
+		}
+
+		if cfgFile != "" {
+			idx, err = facet.NewIndexFromFiles(cfgFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = idx.SetData(lo.ToAnySlice(dataFiles)...)
+			if err != nil {
+				log.Fatalf("error with data files: %v\n", err)
+			}
+
+			if hasFilter {
+				idx = idx.Filter(filters)
+			}
+
 		} else {
 			in := cmd.InOrStdin()
 			err = idx.Decode(in)
@@ -68,18 +95,14 @@ var rootCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		}
-
-		if hasFilter {
-			idx = idx.Filter(q)
+		if p, err := cmd.Flags().GetBool("pretty"); err == nil && p {
+			idx.PrettyPrint()
+		} else {
+			idx.Print()
 		}
-
-		println(len(idx.Data))
-		idx.Print()
 	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -90,26 +113,23 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "json formatted config file")
+	rootCmd.PersistentFlags().StringSliceVarP(&dataFiles, "files", "f", []string{}, "list of data files to index")
+	rootCmd.PersistentFlags().Bool("pretty", false, "pretty print json output")
+	rootCmd.PersistentFlags().StringP("input", "i", "", "json formatted input")
+	rootCmd.PersistentFlags().StringP("dir", "d", "", "directory of data files")
+	rootCmd.PersistentFlags().StringP("query", "q", "", "encoded query/filter string (eg. color=red&color=pink&category=post")
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "index config file in json format")
-	rootCmd.PersistentFlags().StringSliceVarP(&dataFiles, "input", "i", []string{}, "data to index")
-	rootCmd.PersistentFlags().StringP("dir", "d", "", "data dir")
-	rootCmd.PersistentFlags().StringP("query", "q", "", "encoded query string")
+	rootCmd.PersistentFlags().IntP("workers", "w", 1, "number of workers for computing facets")
+	viper.BindPFlag("workers", rootCmd.Flags().Lookup("workers"))
 }
 
-// initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" {
-		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
-	} else {
-		// TODO: check for local file later
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	viper.AutomaticEnv()
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

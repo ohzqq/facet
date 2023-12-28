@@ -11,7 +11,12 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 )
+
+func init() {
+	viper.SetDefault("workers", 1)
+}
 
 type Index struct {
 	Data    []map[string]any `json:"data,omitempty"`
@@ -28,10 +33,6 @@ func New(c any, data ...any) (*Index, error) {
 	err = idx.SetData(data...)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(idx.Data) < 1 {
-		return idx, errors.New("data is required")
 	}
 
 	if idx.Filters != nil {
@@ -124,6 +125,15 @@ func (idx *Index) JSON() []byte {
 
 func (idx *Index) Print() {
 	err := idx.Encode(os.Stdout)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (idx *Index) PrettyPrint() {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	err := enc.Encode(idx)
 	if err != nil {
 		log.Fatal(err)
 	}
