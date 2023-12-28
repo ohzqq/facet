@@ -1,19 +1,16 @@
 package facet
 
 import (
-	"strings"
-
 	"github.com/RoaringBitmap/roaring"
 	"github.com/sahilm/fuzzy"
-	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
 type Facet struct {
-	Attribute string  `json:"attribute"`
-	Items     []*Term `json:"items,omitempty"`
-	Operator  string  `json:"operator,omitempty"`
-	Sep       string  `json:"-"`
+	Attribute string       `json:"attribute"`
+	Items     []*FacetItem `json:"items,omitempty"`
+	Operator  string       `json:"operator,omitempty"`
+	Sep       string       `json:"-"`
 }
 
 func NewFacet(name string) *Facet {
@@ -24,7 +21,7 @@ func NewFacet(name string) *Facet {
 	}
 }
 
-func (f *Facet) GetItem(term string) *Term {
+func (f *Facet) GetItem(term string) *FacetItem {
 	for _, item := range f.Items {
 		if term == item.Value {
 			return item
@@ -41,7 +38,7 @@ func (f *Facet) ListItems() []string {
 	return items
 }
 
-func (f *Facet) AddItem(term string, ids ...string) *Term {
+func (f *Facet) AddItem(term string, ids ...string) *FacetItem {
 	for _, i := range f.Items {
 		if term == i.Value {
 			i.AddItems(ids...)
@@ -64,18 +61,9 @@ func (f *Facet) CollectItems(data []map[string]any) *Facet {
 	return f
 }
 
-func (f *Facet) HierarchicalItems(sep string) []*Term {
-	fn := func(item *Term, i int) bool {
-		b := strings.Contains(item.Value, sep)
-		return b
-	}
-	items := lo.Filter(f.Items, fn)
-	return items
-}
-
-func (f *Facet) FuzzyFindItem(term string) []*Term {
+func (f *Facet) FuzzyFindItem(term string) []*FacetItem {
 	matches := f.FuzzyMatches(term)
-	items := make([]*Term, len(matches))
+	items := make([]*FacetItem, len(matches))
 	for i, match := range matches {
 		item := f.Items[match.Index]
 		item.Match = match
@@ -111,7 +99,7 @@ func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	}
 }
 
-type Term struct {
+type FacetItem struct {
 	Value       string `json:"value"`
 	Label       string `json:"label"`
 	Count       int    `json:"count"`
@@ -119,8 +107,8 @@ type Term struct {
 	fuzzy.Match `json:"-"`
 }
 
-func NewTerm(name string, vals []string) *Term {
-	term := &Term{
+func NewTerm(name string, vals []string) *FacetItem {
+	term := &FacetItem{
 		Value: name,
 		Label: name,
 	}
@@ -128,7 +116,7 @@ func NewTerm(name string, vals []string) *Term {
 	return term
 }
 
-func (t *Term) AddItems(vals ...string) *Term {
+func (t *FacetItem) AddItems(vals ...string) *FacetItem {
 	for _, val := range vals {
 		t.belongsTo = append(t.belongsTo, cast.ToUint32(val))
 	}
@@ -136,6 +124,6 @@ func (t *Term) AddItems(vals ...string) *Term {
 	return t
 }
 
-func (t *Term) Bitmap() *roaring.Bitmap {
+func (t *FacetItem) Bitmap() *roaring.Bitmap {
 	return roaring.BitmapOf(t.belongsTo...)
 }

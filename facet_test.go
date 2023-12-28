@@ -35,17 +35,6 @@ func TestFuzzyFindItem(t *testing.T) {
 	//}
 }
 
-func TestHierarchicalItems(t *testing.T) {
-	f := idx.GetFacet("tags")
-	items := f.HierarchicalItems(".")
-	if len(f.Items) == len(items) {
-		t.Errorf("got %d, original %d\n", len(items), len(f.Items))
-	}
-	for _, i := range items {
-		fmt.Printf("%#v\n", i)
-	}
-}
-
 func TestRoaringFilter(t *testing.T) {
 	abo := getRoaringAbo(t)
 	dnr := getRoaringDnr(t)
