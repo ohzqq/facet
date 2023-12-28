@@ -70,17 +70,17 @@ func (f *Facet) AddItem(term string, ids ...string) *FacetItem {
 func (f *Facet) CollectItems(data []map[string]any) *Facet {
 	for i, item := range data {
 		if terms, ok := item[f.Attribute]; ok {
+			var items []string
 			switch t := terms.(type) {
 			case string:
-				f.AddItem(t, cast.ToString(i))
+				items = append(items, t)
 			case []string:
-				for _, term := range t {
-					f.AddItem(term, cast.ToString(i))
-				}
+				items = t
 			case []any:
-				for _, term := range t {
-					f.AddItem(cast.ToString(term), cast.ToString(i))
-				}
+				items = cast.ToStringSlice(t)
+			}
+			for _, term := range items {
+				f.AddItem(term, cast.ToString(i))
 			}
 		}
 	}
