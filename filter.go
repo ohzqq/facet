@@ -10,8 +10,8 @@ import (
 
 func Filter(idx *Index) *Index {
 	var bits []*roaring.Bitmap
-	for name, filters := range idx.Filters {
-		if facet, ok := idx.Facets[name]; ok {
+	for _, filters := range idx.Filters {
+		for _, facet := range idx.Facets {
 			bits = append(bits, facet.Filter(filters...))
 		}
 	}

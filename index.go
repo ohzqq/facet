@@ -13,9 +13,9 @@ import (
 )
 
 type Index struct {
-	Data    []map[string]any  `json:"data,omitempty"`
-	Facets  map[string]*Facet `json:"facets"`
-	Filters url.Values        `json:"filters"`
+	Data    []map[string]any `json:"data,omitempty"`
+	Facets  []*Facet         `json:"facets"`
+	Filters url.Values       `json:"filters"`
 }
 
 func New(c any, data ...any) (*Index, error) {
@@ -51,16 +51,17 @@ func (idx *Index) Filter(q any) *Index {
 }
 
 func (idx *Index) CollectTerms() *Index {
-	for name, facet := range idx.Facets {
-		facet.Attribute = name
+	for _, facet := range idx.Facets {
 		facet.CollectItems(idx.Data)
 	}
 	return idx
 }
 
 func (idx *Index) GetFacet(name string) *Facet {
-	if f, ok := idx.Facets[name]; ok {
-		return f
+	for _, facet := range idx.Facets {
+		if facet.Attribute == name {
+			return facet
+		}
 	}
 	return NewFacet(name)
 }
