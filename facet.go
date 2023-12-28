@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Facet is a structure for facet data.
 type Facet struct {
 	Attribute string       `json:"attribute"`
 	Items     []*FacetItem `json:"items,omitempty"`
@@ -14,6 +15,7 @@ type Facet struct {
 	Sep       string       `json:"-"`
 }
 
+// NewFacet initializes a facet with attribute.
 func NewFacet(name string) *Facet {
 	return &Facet{
 		Attribute: name,
@@ -22,6 +24,7 @@ func NewFacet(name string) *Facet {
 	}
 }
 
+// GetItem returns an *FacetItem.
 func (f *Facet) GetItem(term string) *FacetItem {
 	for _, item := range f.Items {
 		if term == item.Value {
@@ -31,6 +34,7 @@ func (f *Facet) GetItem(term string) *FacetItem {
 	return f.AddItem(term)
 }
 
+// GetConfig returns a map of a Facet's config.
 func (f *Facet) GetConfig() map[string]any {
 	return map[string]any{
 		"attribute": f.Attribute,
@@ -38,6 +42,7 @@ func (f *Facet) GetConfig() map[string]any {
 	}
 }
 
+// ListItems returns a string slice of all item values.
 func (f *Facet) ListItems() []string {
 	var items []string
 	for _, item := range f.Items {
@@ -46,18 +51,22 @@ func (f *Facet) ListItems() []string {
 	return items
 }
 
+// AddItem adds an item with optional ids. If the item already exists ids are
+// appended.
 func (f *Facet) AddItem(term string, ids ...string) *FacetItem {
 	for _, i := range f.Items {
 		if term == i.Value {
-			i.AddItems(ids...)
+			i.BelongsTo(ids...)
 			return i
 		}
 	}
-	item := NewTerm(term, ids)
+	item := NewFacetItem(term, ids)
 	f.Items = append(f.Items, item)
 	return item
 }
 
+// CollectItems takes the input data and aggregates them based on the
+// Facet.Attribute.
 func (f *Facet) CollectItems(data []map[string]any) *Facet {
 	for i, item := range data {
 		if terms, ok := item[f.Attribute]; ok {
@@ -69,6 +78,7 @@ func (f *Facet) CollectItems(data []map[string]any) *Facet {
 	return f
 }
 
+// FuzzyFindItem fuzzy finds an item's value and returns possible matches.
 func (f *Facet) FuzzyFindItem(term string) []*FacetItem {
 	matches := f.FuzzyMatches(term)
 	items := make([]*FacetItem, len(matches))
@@ -80,18 +90,22 @@ func (f *Facet) FuzzyFindItem(term string) []*FacetItem {
 	return items
 }
 
+// FuzzyMatches returns the fuzzy.Matches of the search.
 func (f *Facet) FuzzyMatches(term string) fuzzy.Matches {
 	return fuzzy.FindFrom(term, f)
 }
 
+// String returns an Item.Value, to satisfy the fuzzy.Source interface.
 func (f *Facet) String(i int) string {
 	return f.Items[i].Value
 }
 
+// Len returns the number of items, to satisfy the fuzzy.Source interface.
 func (f *Facet) Len() int {
 	return len(f.Items)
 }
 
+// Filter applies the listed filters to the facet.
 func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	var bits []*roaring.Bitmap
 	for _, filter := range filters {
@@ -107,6 +121,7 @@ func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
 	}
 }
 
+// FacetItem is a data structure for a Facet's item.
 type FacetItem struct {
 	Value       string `json:"value"`
 	Label       string `json:"label"`
@@ -115,16 +130,19 @@ type FacetItem struct {
 	fuzzy.Match `json:"-"`
 }
 
-func NewTerm(name string, vals []string) *FacetItem {
+// NewFacetItem initializes an item with a value and string slice of related data
+// items.
+func NewFacetItem(name string, vals []string) *FacetItem {
 	term := &FacetItem{
 		Value: name,
 		Label: name,
 	}
-	term.AddItems(vals...)
+	term.BelongsTo(vals...)
 	return term
 }
 
-func (t *FacetItem) AddItems(vals ...string) *FacetItem {
+// BelongsTo adds slice of index values for data items.
+func (t *FacetItem) BelongsTo(vals ...string) *FacetItem {
 	for _, val := range vals {
 		t.belongsTo = append(t.belongsTo, cast.ToUint32(val))
 	}
@@ -132,6 +150,7 @@ func (t *FacetItem) AddItems(vals ...string) *FacetItem {
 	return t
 }
 
+// Bitmap returns a *roaring.Bitmap of slice indices for a FacetItem.
 func (t *FacetItem) Bitmap() *roaring.Bitmap {
 	return roaring.BitmapOf(t.belongsTo...)
 }

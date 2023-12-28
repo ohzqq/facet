@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Filter takes an *Index, filters the data and calculates the facets. It
+// returns a new *Index.
 func Filter(idx *Index) *Index {
 	var bits []*roaring.Bitmap
 	for _, filters := range idx.Filters {
@@ -31,6 +33,7 @@ func Filter(idx *Index) *Index {
 	return res
 }
 
+// FilteredItems returns the subset of data.
 func FilteredItems(data []map[string]any, ids []any) []map[string]any {
 	items := make([]map[string]any, len(ids))
 	for item, _ := range data {
@@ -43,6 +46,7 @@ func FilteredItems(data []map[string]any, ids []any) []map[string]any {
 	return items
 }
 
+// FilterString parses an encoded filter string.
 func FilterString(val string) (url.Values, error) {
 	q, err := url.ParseQuery(val)
 	if err != nil {
@@ -51,6 +55,7 @@ func FilterString(val string) (url.Values, error) {
 	return q, nil
 }
 
+// FilterBytes parses a byte slice to url.Values.
 func FilterBytes(val []byte) (url.Values, error) {
 	filters, err := cast.ToStringMapStringSliceE(string(val))
 	if err != nil {
@@ -59,6 +64,7 @@ func FilterBytes(val []byte) (url.Values, error) {
 	return filters, nil
 }
 
+// ParseFilters takes an interface{} and returns a url.Values.
 func ParseFilters(f any) (url.Values, error) {
 	filters := make(map[string][]string)
 	var err error
