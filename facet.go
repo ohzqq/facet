@@ -30,6 +30,13 @@ func (f *Facet) GetItem(term string) *FacetItem {
 	return f.AddItem(term)
 }
 
+func (f *Facet) GetConfig() map[string]any {
+	return map[string]any{
+		"attribute": f.Attribute,
+		"operator":  f.Operator,
+	}
+}
+
 func (f *Facet) ListItems() []string {
 	var items []string
 	for _, item := range f.Items {

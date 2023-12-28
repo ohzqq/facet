@@ -22,6 +22,7 @@ var rootCmd = &cobra.Command{
 	Use:   "facet",
 	Short: "calculate facets for search",
 	Run: func(cmd *cobra.Command, args []string) {
+		log.SetFlags(log.Lshortfile)
 		var err error
 
 		var q string
@@ -57,12 +58,12 @@ var rootCmd = &cobra.Command{
 				}
 				err = idx.SetData(lo.ToAnySlice(dataFiles)...)
 				if err != nil {
-					log.Fatal(err)
+					log.Fatalf("error with data files: %v\n", err)
 				}
 			}
 		} else {
 			in := cmd.InOrStdin()
-			idx, err = facet.DecodeIndex(in)
+			err = idx.Decode(in)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -72,8 +73,8 @@ var rootCmd = &cobra.Command{
 			idx = idx.Filter(q)
 		}
 
-		//println(len(idx.Data))
-		println(idx.String())
+		println(len(idx.Data))
+		idx.Print()
 	},
 }
 

@@ -19,12 +19,15 @@ func Filter(idx *Index) *Index {
 	filtered := roaring.ParOr(4, bits...)
 	ids := filtered.ToArray()
 
-	res := &Index{
-		Data:    FilteredItems(idx.Data, lo.ToAnySlice(ids)),
-		Facets:  idx.Facets,
-		Filters: idx.Filters,
+	res, err := New(
+		idx.GetConfig(),
+		FilteredItems(idx.Data, lo.ToAnySlice(ids)),
+	)
+	res.Filters = idx.Filters
+	if err != nil {
+		return res
 	}
-	return res.CollectTerms()
+	return res
 }
 
 func FilteredItems(data []map[string]any, ids []any) []map[string]any {

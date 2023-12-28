@@ -58,6 +58,16 @@ func (idx *Index) CollectTerms() *Index {
 	return idx
 }
 
+func (idx *Index) GetConfig() map[string]any {
+	var facets []map[string]any
+	for _, f := range idx.Facets {
+		facets = append(facets, f.GetConfig())
+	}
+	return map[string]any{
+		"facets": facets,
+	}
+}
+
 func (idx *Index) GetFacet(name string) *Facet {
 	for _, facet := range idx.Facets {
 		if facet.Attribute == name {
@@ -79,12 +89,16 @@ func (idx *Index) SetData(data ...any) error {
 	return nil
 }
 
-func (idx *Index) DecodeCfg(r io.Reader) error {
+func (idx *Index) Decode(r io.Reader) error {
 	err := json.NewDecoder(r).Decode(idx)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (idx *Index) Encode(w io.Writer) error {
+	return json.NewEncoder(w).Encode(idx)
 }
 
 func (idx *Index) DecodeData(r io.Reader) error {
@@ -100,11 +114,19 @@ func (idx *Index) String() string {
 }
 
 func (idx *Index) JSON() []byte {
-	d, err := json.Marshal(idx)
+	var buf bytes.Buffer
+	err := idx.Encode(&buf)
 	if err != nil {
 		return []byte("{}")
 	}
-	return d
+	return buf.Bytes()
+}
+
+func (idx *Index) Print() {
+	err := idx.Encode(os.Stdout)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func DecodeData(r io.Reader) ([]map[string]any, error) {
@@ -125,7 +147,7 @@ func NewIndexFromFiles(cfg string) (*Index, error) {
 	}
 	defer f.Close()
 
-	err = idx.DecodeCfg(f)
+	err = idx.Decode(f)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +179,7 @@ func dataFromFile(d string) ([]map[string]any, error) {
 func NewIndexFromString(d string) (*Index, error) {
 	idx := &Index{}
 	buf := bytes.NewBufferString(d)
-	err := idx.DecodeCfg(buf)
+	err := idx.Decode(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +212,7 @@ func parseCfg(c any) (*Index, error) {
 	switch val := c.(type) {
 	case []byte:
 		buf := bytes.NewBuffer(val)
-		err := cfg.DecodeCfg(buf)
+		err := cfg.Decode(buf)
 		return cfg, err
 	case string:
 		if Exist(val) {
