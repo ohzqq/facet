@@ -10,15 +10,15 @@ import (
 )
 
 type Facet struct {
-	Attribute []string `json:"attribute"`
-	Items     []*Term  `json:"items,omitempty"`
-	Operator  string   `json:"operator,omitempty"`
-	Sep       string   `json:"-"`
+	Attribute string  `json:"attribute"`
+	Items     []*Term `json:"items,omitempty"`
+	Operator  string  `json:"operator,omitempty"`
+	Sep       string  `json:"-"`
 }
 
 func NewFacet(name string) *Facet {
 	return &Facet{
-		Attribute: []string{name},
+		Attribute: name,
 		Operator:  "or",
 		Sep:       ".",
 	}
@@ -55,11 +55,9 @@ func (f *Facet) AddItem(term string, ids ...string) *Term {
 
 func (f *Facet) CollectItems(data []map[string]any) *Facet {
 	for i, item := range data {
-		for _, attr := range f.Attribute {
-			if terms, ok := item[attr]; ok {
-				for _, term := range terms.([]any) {
-					f.AddItem(cast.ToString(term), cast.ToString(i))
-				}
+		if terms, ok := item[f.Attribute]; ok {
+			for _, term := range terms.([]any) {
+				f.AddItem(cast.ToString(term), cast.ToString(i))
 			}
 		}
 	}
