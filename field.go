@@ -27,6 +27,8 @@ type Field struct {
 	Sep       string `json:"-"`
 	SortBy    string
 	Order     string
+	terms     []string
+	Items     map[string]*Item
 	*txt.Tokens
 }
 
@@ -35,7 +37,6 @@ func NewField(attr string) *Field {
 		Sep:    ".",
 		Tokens: txt.NewTokens(),
 	}
-	f.SetAnalyzer(txt.Keyword())
 	parseAttr(f, attr)
 	return f
 }
@@ -74,8 +75,8 @@ func (f *Field) MarshalJSON() ([]byte, error) {
 	return d, err
 }
 
-func (t *Field) GetTokens() []*txt.Token {
-	var tokens []*txt.Token
+func (t *Field) GetTokens() []*txt.Item {
+	var tokens []*txt.Item
 	for _, label := range t.Tokens.Tokens {
 		tok := t.FindByLabel(label)
 		tokens = append(tokens, tok)
@@ -109,8 +110,8 @@ func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any
 	return res
 }
 
-func (t *Field) FindByIndex(ti ...int) []*txt.Token {
-	var tokens []*txt.Token
+func (t *Field) FindByIndex(ti ...int) []*txt.Item {
+	var tokens []*txt.Item
 	toks := t.GetTokens()
 	total := t.Count()
 	for _, tok := range ti {
@@ -121,9 +122,9 @@ func (t *Field) FindByIndex(ti ...int) []*txt.Token {
 	return tokens
 }
 
-func (t *Field) Search(term string) []*txt.Token {
+func (t *Field) Search(term string) []*txt.Item {
 	matches := fuzzy.FindFrom(term, t)
-	tokens := make([]*txt.Token, len(matches))
+	tokens := make([]*txt.Item, len(matches))
 	all := t.GetTokens()
 	for i, match := range matches {
 		tokens[i] = all[match.Index]

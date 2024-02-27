@@ -7,30 +7,24 @@ import (
 )
 
 type Analyzer interface {
-	Tokenize(any) []*Token
+	Tokenize(any) []*Item
 }
 
 func Keyword() Analyzer {
 	return keyword{}
 }
 
-//func Keyword() Option {
-//  return func(tokens *Tokens) {
-//    tokens.analyzer = keyword{}
-//  }
-//}
-
 type keyword struct{}
 
-func (kw keyword) Tokenize(str any) []*Token {
+func (kw keyword) Tokenize(str any) []*Item {
 	return KeywordTokenizer(str)
 }
 
-func (kw keyword) Search(text string) []*Token {
-	return []*Token{NewToken(normalizeText(text))}
+func (kw keyword) Search(text string) []*Item {
+	return []*Item{NewToken(normalizeText(text))}
 }
 
-func KeywordTokenizer(val any) []*Token {
+func KeywordTokenizer(val any) []*Item {
 	var tokens []string
 	switch v := val.(type) {
 	case string:
@@ -38,7 +32,7 @@ func KeywordTokenizer(val any) []*Token {
 	default:
 		tokens = cast.ToStringSlice(v)
 	}
-	items := make([]*Token, len(tokens))
+	items := make([]*Item, len(tokens))
 	for i, token := range tokens {
 		items[i] = NewToken(token)
 		items[i].Value = normalizeText(token)
