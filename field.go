@@ -1,4 +1,4 @@
-package srch
+package facet
 
 import (
 	"encoding/json"
@@ -36,8 +36,30 @@ func NewField(attr string) *Field {
 		Sep:    ".",
 		Tokens: txt.NewTokens(),
 	}
+	f.SetAnalyzer(txt.Keyword())
 	parseAttr(f, attr)
 	return f
+}
+
+func NewFields(attrs []string) map[string]*Field {
+	fields := make(map[string]*Field)
+	for _, attr := range attrs {
+		fields[attr] = NewField(attr)
+	}
+
+	return fields
+}
+
+func CalculateFacets(data []map[string]any, fields []string) map[string]*Field {
+	facets := NewFields(fields)
+	for id, d := range data {
+		for attr, facet := range facets {
+			if val, ok := d[attr]; ok {
+				facet.Add(val, []int{id})
+			}
+		}
+	}
+	return facets
 }
 
 func (f *Field) MarshalJSON() ([]byte, error) {
