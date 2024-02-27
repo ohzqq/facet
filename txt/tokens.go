@@ -9,7 +9,7 @@ type Tokens struct {
 func NewTokens() *Tokens {
 	tokens := &Tokens{
 		tokens:   make(map[string]*Token),
-		analyzer: Simple{},
+		analyzer: Keyword(),
 	}
 	return tokens
 }
