@@ -29,13 +29,15 @@ type Field struct {
 	Order     string
 	terms     []string
 	Items     map[string]*Item
+	analyzer  txt.Analyzer
 	*txt.Tokens
 }
 
 func NewField(attr string) *Field {
 	f := &Field{
-		Sep:    ".",
-		Tokens: txt.NewTokens(),
+		Sep:      ".",
+		Tokens:   txt.NewTokens(),
+		analyzer: txt.Keyword(),
 	}
 	parseAttr(f, attr)
 	return f
@@ -84,6 +86,22 @@ func (t *Field) GetTokens() []*txt.Item {
 	return tokens
 }
 
+func (t *Field) Add(val any, ids []int) {
+	for _, token := range t.Tokenize(val) {
+		if t.Items == nil {
+			t.Items = make(map[string]*Item)
+		}
+		if _, ok := t.Items[token.Value]; !ok {
+			t.terms = append(t.terms, token.Label)
+			t.Items[token.Value] = token
+		}
+		t.Items[token.Value].Add(ids...)
+	}
+}
+
+func (t *Field) Tokenize(val any) []*Item {
+	return t.analyzer.Tokenize(val)
+}
 func GetFieldItems(data []map[string]any, field *Field) []map[string]any {
 	field.SortBy = SortByAlpha
 	tokens := field.SortTokens()

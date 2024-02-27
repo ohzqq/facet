@@ -7,7 +7,7 @@ import (
 	"github.com/ohzqq/facet/txt"
 )
 
-func (t *Field) SortTokens() []*txt.Token {
+func (t *Field) SortTokens() []*txt.Item {
 	tokens := t.GetTokens()
 
 	switch t.SortBy {
@@ -30,17 +30,17 @@ func (t *Field) SortTokens() []*txt.Token {
 	return tokens
 }
 
-func SortTokensByCount(items []*txt.Token) []*txt.Token {
+func SortTokensByCount(items []*txt.Item) []*txt.Item {
 	slices.SortStableFunc(items, SortByCountFunc)
 	return items
 }
 
-func SortTokensByAlpha(items []*txt.Token) []*txt.Token {
+func SortTokensByAlpha(items []*txt.Item) []*txt.Item {
 	slices.SortStableFunc(items, SortByAlphaFunc)
 	return items
 }
 
-func SortByCountFunc(a *txt.Token, b *txt.Token) int {
+func SortByCountFunc(a *txt.Item, b *txt.Item) int {
 	aC := a.Count()
 	bC := b.Count()
 	switch {
@@ -53,7 +53,7 @@ func SortByCountFunc(a *txt.Token, b *txt.Token) int {
 	}
 }
 
-func SortByAlphaFunc(a *txt.Token, b *txt.Token) int {
+func SortByAlphaFunc(a *txt.Item, b *txt.Item) int {
 	aL := strings.ToLower(a.Label)
 	bL := strings.ToLower(b.Label)
 	switch {

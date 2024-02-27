@@ -1,20 +1,18 @@
-package txt
+package facet
 
 import (
 	"encoding/json"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/sahilm/fuzzy"
 )
 
 type Item struct {
-	Value       string `json:"value"`
-	Label       string `json:"label"`
-	bits        *roaring.Bitmap
-	fuzzy.Match `json:"-"`
+	Value string `json:"value"`
+	Label string `json:"label"`
+	bits  *roaring.Bitmap
 }
 
-func NewToken(label string) *Item {
+func NewItem(label string) *Item {
 	return &Item{
 		Value: label,
 		Label: label,
