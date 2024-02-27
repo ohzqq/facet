@@ -33,7 +33,7 @@ type Field struct {
 
 func NewField(attr string) *Field {
 	f := &Field{
-		Sep:      ".",
+		Sep:      "/",
 		analyzer: keyword{},
 	}
 	parseAttr(f, attr)
@@ -47,18 +47,6 @@ func NewFields(attrs []string) map[string]*Field {
 	}
 
 	return fields
-}
-
-func CalculateFacets(data []map[string]any, fields []string) map[string]*Field {
-	facets := NewFields(fields)
-	for id, d := range data {
-		for attr, facet := range facets {
-			if val, ok := d[attr]; ok {
-				facet.Add(val, []int{id})
-			}
-		}
-	}
-	return facets
 }
 
 func (f *Field) MarshalJSON() ([]byte, error) {
