@@ -6,38 +6,39 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
-type Item struct {
-	Value string `json:"value"`
-	Label string `json:"label"`
-	bits  *roaring.Bitmap
+type Keyword struct {
+	Value    string `json:"value"`
+	Label    string `json:"label"`
+	Children *Field
+	bits     *roaring.Bitmap
 }
 
-func NewItem(label string) *Item {
-	return &Item{
+func NewItem(label string) *Keyword {
+	return &Keyword{
 		Value: label,
 		Label: label,
 		bits:  roaring.New(),
 	}
 }
 
-func (f *Item) Bitmap() *roaring.Bitmap {
+func (f *Keyword) Bitmap() *roaring.Bitmap {
 	return f.bits
 }
 
-func (f *Item) SetValue(txt string) *Item {
+func (f *Keyword) SetValue(txt string) *Keyword {
 	f.Value = txt
 	return f
 }
 
-func (f *Item) Count() int {
+func (f *Keyword) Count() int {
 	return int(f.bits.GetCardinality())
 }
 
-func (f *Item) Contains(id int) bool {
+func (f *Keyword) Contains(id int) bool {
 	return f.bits.ContainsInt(id)
 }
 
-func (f *Item) Add(ids ...int) {
+func (f *Keyword) Add(ids ...int) {
 	for _, id := range ids {
 		if !f.Contains(id) {
 			f.bits.AddInt(id)
@@ -45,7 +46,7 @@ func (f *Item) Add(ids ...int) {
 	}
 }
 
-func (f *Item) MarshalJSON() ([]byte, error) {
+func (f *Keyword) MarshalJSON() ([]byte, error) {
 	item := map[string]any{
 		f.Label: f.Count(),
 	}

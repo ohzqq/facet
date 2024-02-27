@@ -27,14 +27,14 @@ type Field struct {
 	SortBy    string
 	Order     string
 	terms     []string
-	Items     map[string]*Item
+	Keywords  map[string]*Keyword
 	analyzer  Analyzer
 }
 
 func NewField(attr string) *Field {
 	f := &Field{
 		Sep:      ".",
-		analyzer: Keyword(),
+		analyzer: keyword{},
 	}
 	parseAttr(f, attr)
 	return f
@@ -74,8 +74,8 @@ func (f *Field) MarshalJSON() ([]byte, error) {
 	return d, err
 }
 
-func (t *Field) GetTokens() []*Item {
-	var tokens []*Item
+func (t *Field) GetTokens() []*Keyword {
+	var tokens []*Keyword
 	for _, label := range t.terms {
 		tok := t.FindByLabel(label)
 		tokens = append(tokens, tok)
@@ -85,18 +85,18 @@ func (t *Field) GetTokens() []*Item {
 
 func (t *Field) Add(val any, ids []int) {
 	for _, token := range t.Tokenize(val) {
-		if t.Items == nil {
-			t.Items = make(map[string]*Item)
+		if t.Keywords == nil {
+			t.Keywords = make(map[string]*Keyword)
 		}
-		if _, ok := t.Items[token.Value]; !ok {
+		if _, ok := t.Keywords[token.Value]; !ok {
 			t.terms = append(t.terms, token.Label)
-			t.Items[token.Value] = token
+			t.Keywords[token.Value] = token
 		}
-		t.Items[token.Value].Add(ids...)
+		t.Keywords[token.Value].Add(ids...)
 	}
 }
 
-func (t *Field) Tokenize(val any) []*Item {
+func (t *Field) Tokenize(val any) []*Keyword {
 	return t.analyzer.Tokenize(val)
 }
 
@@ -126,8 +126,8 @@ func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any
 	return res
 }
 
-func (t *Field) FindByIndex(ti ...int) []*Item {
-	var tokens []*Item
+func (t *Field) FindByIndex(ti ...int) []*Keyword {
+	var tokens []*Keyword
 	toks := t.GetTokens()
 	total := t.Count()
 	for _, tok := range ti {
@@ -138,9 +138,9 @@ func (t *Field) FindByIndex(ti ...int) []*Item {
 	return tokens
 }
 
-func (t *Field) Search(term string) []*Item {
+func (t *Field) Search(term string) []*Keyword {
 	matches := fuzzy.FindFrom(term, t)
-	tokens := make([]*Item, len(matches))
+	tokens := make([]*Keyword, len(matches))
 	all := t.GetTokens()
 	for i, match := range matches {
 		tokens[i] = all[match.Index]
@@ -207,18 +207,18 @@ func parseAttr(field *Field, attr string) {
 	}
 }
 
-func (t *Field) Find(val any) []*Item {
-	var tokens []*Item
+func (t *Field) Find(val any) []*Keyword {
+	var tokens []*Keyword
 	for _, tok := range t.Tokenize(val) {
-		if token, ok := t.Items[tok.Value]; ok {
+		if token, ok := t.Keywords[tok.Value]; ok {
 			tokens = append(tokens, token)
 		}
 	}
 	return tokens
 }
 
-func (t *Field) FindByLabel(label string) *Item {
-	for _, token := range t.Items {
+func (t *Field) FindByLabel(label string) *Keyword {
+	for _, token := range t.Keywords {
 		if token.Label == label {
 			return token
 		}
@@ -227,5 +227,5 @@ func (t *Field) FindByLabel(label string) *Item {
 }
 
 func (t *Field) Count() int {
-	return len(t.Items)
+	return len(t.Keywords)
 }
