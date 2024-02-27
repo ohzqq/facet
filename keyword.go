@@ -1,4 +1,4 @@
-package txt
+package facet
 
 import (
 	"strings"
@@ -21,7 +21,7 @@ func (kw keyword) Tokenize(str any) []*Item {
 }
 
 func (kw keyword) Search(text string) []*Item {
-	return []*Item{NewToken(normalizeText(text))}
+	return []*Item{NewItem(normalizeText(text))}
 }
 
 func KeywordTokenizer(val any) []*Item {
@@ -34,7 +34,7 @@ func KeywordTokenizer(val any) []*Item {
 	}
 	items := make([]*Item, len(tokens))
 	for i, token := range tokens {
-		items[i] = NewToken(token)
+		items[i] = NewItem(token)
 		items[i].Value = normalizeText(token)
 	}
 	return items

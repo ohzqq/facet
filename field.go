@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/ohzqq/facet/txt"
 	"github.com/sahilm/fuzzy"
 	"github.com/spf13/viper"
 )
@@ -29,15 +28,13 @@ type Field struct {
 	Order     string
 	terms     []string
 	Items     map[string]*Item
-	analyzer  txt.Analyzer
-	*txt.Tokens
+	analyzer  Analyzer
 }
 
 func NewField(attr string) *Field {
 	f := &Field{
 		Sep:      ".",
-		Tokens:   txt.NewTokens(),
-		analyzer: txt.Keyword(),
+		analyzer: Keyword(),
 	}
 	parseAttr(f, attr)
 	return f
@@ -66,7 +63,7 @@ func CalculateFacets(data []map[string]any, fields []string) map[string]*Field {
 
 func (f *Field) MarshalJSON() ([]byte, error) {
 	tokens := make(map[string]int)
-	for _, label := range f.Tokens.Tokens {
+	for _, label := range f.terms {
 		token := f.FindByLabel(label)
 		tokens[label] = token.Count()
 	}
@@ -77,9 +74,9 @@ func (f *Field) MarshalJSON() ([]byte, error) {
 	return d, err
 }
 
-func (t *Field) GetTokens() []*txt.Item {
-	var tokens []*txt.Item
-	for _, label := range t.Tokens.Tokens {
+func (t *Field) GetTokens() []*Item {
+	var tokens []*Item
+	for _, label := range t.terms {
 		tok := t.FindByLabel(label)
 		tokens = append(tokens, tok)
 	}
@@ -102,6 +99,7 @@ func (t *Field) Add(val any, ids []int) {
 func (t *Field) Tokenize(val any) []*Item {
 	return t.analyzer.Tokenize(val)
 }
+
 func GetFieldItems(data []map[string]any, field *Field) []map[string]any {
 	field.SortBy = SortByAlpha
 	tokens := field.SortTokens()
@@ -128,8 +126,8 @@ func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any
 	return res
 }
 
-func (t *Field) FindByIndex(ti ...int) []*txt.Item {
-	var tokens []*txt.Item
+func (t *Field) FindByIndex(ti ...int) []*Item {
+	var tokens []*Item
 	toks := t.GetTokens()
 	total := t.Count()
 	for _, tok := range ti {
@@ -140,9 +138,9 @@ func (t *Field) FindByIndex(ti ...int) []*txt.Item {
 	return tokens
 }
 
-func (t *Field) Search(term string) []*txt.Item {
+func (t *Field) Search(term string) []*Item {
 	matches := fuzzy.FindFrom(term, t)
-	tokens := make([]*txt.Item, len(matches))
+	tokens := make([]*Item, len(matches))
 	all := t.GetTokens()
 	for i, match := range matches {
 		tokens[i] = all[match.Index]
@@ -186,7 +184,7 @@ func (t *Field) Len() int {
 
 // String returns an Item.Value, to satisfy the fuzzy.Source interface.
 func (t *Field) String(i int) string {
-	return t.Tokens.Tokens[i]
+	return t.terms[i]
 }
 
 func parseAttr(field *Field, attr string) {
@@ -207,4 +205,27 @@ func parseAttr(field *Field, attr string) {
 		}
 		i++
 	}
+}
+
+func (t *Field) Find(val any) []*Item {
+	var tokens []*Item
+	for _, tok := range t.Tokenize(val) {
+		if token, ok := t.Items[tok.Value]; ok {
+			tokens = append(tokens, token)
+		}
+	}
+	return tokens
+}
+
+func (t *Field) FindByLabel(label string) *Item {
+	for _, token := range t.Items {
+		if token.Label == label {
+			return token
+		}
+	}
+	return NewItem(label)
+}
+
+func (t *Field) Count() int {
+	return len(t.Items)
 }
