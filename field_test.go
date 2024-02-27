@@ -1,62 +1,25 @@
 package facet
 
 import (
-	"log"
-	"testing"
-
-	"github.com/ohzqq/srch/txt"
+	"encoding/json"
+	"os"
 )
 
-var fieldSortParams = []string{}
+const testDataFile = `testdata/data-dir/audiobooks.json`
+const testDataDir = `testdata/data-dir`
+const numBooks = 7253
 
-func TestFieldSort(t *testing.T) {
-	t.SkipNow()
-	var sorted []*txt.Token
-	alpha := libCfgStr + "&sortFacetValuesBy=alpha"
-	i, err := New(alpha)
+func loadData() ([]map[string]any, error) {
+	d, err := os.ReadFile(testDataFile)
 	if err != nil {
-		log.Fatal(err)
-	}
-	idx := NewResponse(i.Data, alpha)
-	tags := idx.GetFacet("tags")
-	for _, o := range []string{"desc", "asc"} {
-		tags.Order = o
-		sorted = tags.SortTokens()
-		switch tags.Order {
-		case "asc":
-			if sorted[0].Label != "abo" {
-				t.Errorf("alpha: %s (%d)\n", sorted[0].Label, sorted[0].Count())
-			}
-		case "desc":
-			fallthrough
-		default:
-			if sorted[0].Label != "zombies" {
-				t.Errorf("alpha: %s (%d)\n", sorted[0].Label, sorted[0].Count())
-			}
-		}
+		return nil, err
 	}
 
-	count := libCfgStr + "&sortFacetValuesBy=count"
-	i, err = New(count)
+	var books []map[string]any
+	err = json.Unmarshal(d, &books)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	idx = NewResponse(i.Data, alpha)
-	tags = idx.GetFacet("tags")
-	for _, o := range []string{"desc", "asc"} {
-		tags.Order = o
-		sorted = tags.SortTokens()
-		switch tags.Order {
-		case "asc":
-			if sorted[0].Label != "courting" {
-				t.Errorf("count: %s (%d)\n", sorted[0].Label, sorted[0].Count())
-			}
-		case "desc":
-			fallthrough
-		default:
-			if sorted[0].Label != "dnr" {
-				t.Errorf("count: %s (%d)\n", sorted[0].Label, sorted[0].Count())
-			}
-		}
-	}
+
+	return books, nil
 }

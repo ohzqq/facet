@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/ohzqq/srch/txt"
+	"github.com/ohzqq/facet/txt"
 	"github.com/sahilm/fuzzy"
 	"github.com/spf13/viper"
 )
@@ -98,6 +98,15 @@ func GetFieldItems(data []map[string]any, field *Field) []map[string]any {
 		}
 	}
 	return items
+}
+
+func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any {
+	var res []map[string]any
+	bits.Iterate(func(x uint32) bool {
+		res = append(res, data[int(x)])
+		return true
+	})
+	return res
 }
 
 func (t *Field) FindByIndex(ti ...int) []*txt.Token {

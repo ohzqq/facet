@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ohzqq/srch/txt"
+	"github.com/ohzqq/facet/txt"
 )
 
 func (t *Field) SortTokens() []*txt.Token {

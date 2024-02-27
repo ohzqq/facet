@@ -1,4 +1,4 @@
-package srch
+package facet
 
 import (
 	"encoding/json"
