@@ -1,12 +1,17 @@
-package srch
+package facet
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"testing"
 )
+
+const testDataFile = `testdata/data-dir/audiobooks.json`
+const testDataDir = `testdata/data-dir`
+const numBooks = 7253
 
 var boolFilterStr = []string{
 	`tags:dnr`,
@@ -16,6 +21,23 @@ var boolFilterStr = []string{
 	`NOT tags:dnr OR tags:abo`,
 	`tags:dnr AND NOT tags:abo`,
 	`tags:dnr OR NOT tags:abo`,
+}
+
+func loadData(t *testing.T) []map[string]any {
+	d, err := os.ReadFile(testDataFile)
+	if err != nil {
+		t.Error(err)
+	}
+
+	var books []map[string]any
+	err = json.Unmarshal(d, &books)
+	if err != nil {
+		t.Error(err)
+	}
+
+	books = books
+
+	return books
 }
 
 func TestMarshalFilter(t *testing.T) {
