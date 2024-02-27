@@ -1,6 +1,6 @@
-package srch
+package facet
 
-import "github.com/ohzqq/srch/txt"
+import "github.com/ohzqq/facet/txt"
 
 type Facet struct {
 	*Field
