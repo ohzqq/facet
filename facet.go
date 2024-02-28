@@ -7,22 +7,18 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 )
 
 type Facets struct {
-	Facets []*Field         `json:"facets"`
-	Attrs  []string         `mapstructure:"attributesForFaceting" json:"attrs"`
-	Data   []map[string]any `mapstructure:"data" json:"data"`
+	Facets []*Field `json:"facets"`
+	data   []map[string]any
 	Query  url.Values
-	UID    string `mapstructure:"uid,omitempty" json:"uid,omitempty"`
 }
 
 func New(params any) (*Facets, error) {
 	facets := NewFacets()
 
-	pm := make(map[string]any)
 	var err error
 	switch p := params.(type) {
 	case string:
@@ -30,21 +26,13 @@ func New(params any) (*Facets, error) {
 		if err != nil {
 			return nil, err
 		}
-		valsToMap(pm, facets.Query)
+		//valsToMap(pm, facets.Query)
 	case url.Values:
 		facets.Query = p
-		valsToMap(pm, facets.Query)
-	case map[string]any:
-		pm = p
-	}
-
-	err = mapstructure.Decode(pm, facets)
-	if err != nil {
-		return nil, err
+		//valsToMap(pm, facets.Query)
 	}
 
 	if facets.Query.Has("data") {
-		println("has data")
 		for _, file := range facets.Query["data"] {
 			f, err := os.Open(file)
 			if err != nil {
@@ -62,13 +50,29 @@ func New(params any) (*Facets, error) {
 }
 
 func NewFacets() *Facets {
-	return &Facets{
-		UID: "id",
+	return &Facets{}
+}
+
+func (f Facets) UID() string {
+	if f.Query.Has("uid") {
+		return f.Query.Get("uid")
 	}
+	return "id"
+}
+
+func (f Facets) Attrs() []string {
+	if f.Query.Has("attributesForFaceting") {
+		attrs := f.Query["attributesForFaceting"]
+		if len(attrs) == 1 {
+			return strings.Split(attrs[0], ",")
+		}
+		return attrs
+	}
+	return []string{}
 }
 
 func (f *Facets) Calculate() *Facets {
-	facets := CalculateFacets(f.Data, f.Attrs, f.UID)
+	facets := CalculateFacets(f.data, f.Attrs(), f.UID())
 	f.Facets = facets
 	return f
 }
@@ -82,7 +86,7 @@ func (f *Facets) DecodeData(r io.Reader) error {
 		} else if err != nil {
 			return err
 		}
-		f.Data = append(f.Data, m)
+		f.data = append(f.data, m)
 	}
 	return nil
 }
@@ -90,7 +94,7 @@ func (f *Facets) DecodeData(r io.Reader) error {
 func (f Facets) EncodeQuery() string {
 	if f.Query == nil {
 		f.Query = make(url.Values)
-		f.Query.Set("uid", f.UID)
+		f.Query.Set("uid", f.UID())
 		for _, field := range f.Facets {
 			f.Query.Add("attributesForFaceting", field.Attr())
 		}
@@ -130,12 +134,6 @@ func valsToMap(pm map[string]any, q url.Values) {
 				pm[attr] = strings.Split(vals[0], ",")
 			} else {
 				pm[attr] = vals
-			}
-		case "data":
-			//pm["data"] = GetDataFromQuery(q)
-		case "uid":
-			if len(vals) == 1 {
-				pm[attr] = vals[0]
 			}
 		default:
 			pm[attr] = vals

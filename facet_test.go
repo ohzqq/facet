@@ -41,7 +41,8 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 	}
 
 	//if len(facets.Data)
-	println(len(facets.Data))
+	fmt.Printf("data %v\n", facets.data)
+	println(len(facets.data))
 }
 
 func TestNewFacetsFromQuery(t *testing.T) {
@@ -57,8 +58,8 @@ func TestNewFacetsFromQuery(t *testing.T) {
 }
 
 func testFacetCfg(facets *Facets) error {
-	if len(facets.Attrs) != 4 {
-		return fmt.Errorf("got %d attributes, expected %d\n", len(facets.Attrs), 4)
+	if attrs := facets.Attrs(); len(attrs) != 4 {
+		return fmt.Errorf("got %d attributes, expected %d\n", len(attrs), 4)
 	}
 
 	facets.Calculate()
