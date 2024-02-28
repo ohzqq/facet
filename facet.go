@@ -12,7 +12,7 @@ import (
 )
 
 type Facets struct {
-	Facets []*Field
+	Facets []*Field         `json:"facets"`
 	Attrs  []string         `mapstructure:"attributesForFaceting" json:"attrs"`
 	Data   []map[string]any `mapstructure:"data" json:"data"`
 	UID    string           `mapstructure:"uid,omitempty" json:"uid,omitempty"`
