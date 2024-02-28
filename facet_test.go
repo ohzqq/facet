@@ -13,12 +13,14 @@ import (
 const testDataFile = `testdata/data-dir/audiobooks.json`
 const testDataDir = `testdata/data-dir`
 const numBooks = 7253
-const testQueryString = `attributesForFaceting=tags,authors,narrators,series&data=testdata/audiobooks.json`
+const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/audiobooks.json`
 
-var defaultFields = []string{"tags,authors,narrators,series"}
+var defFieldsStr = `tags,authors,narrators,series`
+var defFieldsSingle = []string{"tags,authors,narrators,series"}
+var defFieldsSlice = []string{"tags", "authors", "narrators", "series"}
 
 var testQueryVals = url.Values{
-	"attributesForFaceting": defaultFields,
+	"attributesForFaceting": defFieldsSingle,
 	"data":                  []string{"testdata/audiobooks.json"},
 }
 
@@ -66,7 +68,7 @@ func TestNewFacetsFromJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw["data"] = data
-	raw["attributesForFaceting"] = defaultFields
+	raw["attributesForFaceting"] = defFieldsSlice
 
 	facets, err := New(raw)
 	if err != nil {
@@ -96,7 +98,7 @@ func TestNewFacetsFromJSON(t *testing.T) {
 
 func testFacetCfg(facets *Facets) error {
 	if len(facets.Attrs) != 4 {
-		return fmt.Errorf("got %d attributes, expected %d\n", 4, len(facets.Attrs))
+		return fmt.Errorf("got %d attributes, expected %d\n", len(facets.Attrs), 4)
 	}
 	return nil
 }

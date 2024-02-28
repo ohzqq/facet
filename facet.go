@@ -42,10 +42,6 @@ func New(params any) (*Facets, error) {
 		return nil, err
 	}
 
-	if len(facets.Attrs) > 0 {
-		facets.Attrs = strings.Split(facets.Attrs[0], ",")
-	}
-
 	return facets, nil
 }
 
@@ -90,6 +86,12 @@ func CalculateFacets(data []map[string]any, fields []string, ident ...string) []
 func valsToStingMap(pm map[string]any, q url.Values) {
 	for attr, vals := range q {
 		switch attr {
+		case "attributesForFaceting":
+			if len(vals) == 1 {
+				pm[attr] = strings.Split(vals[0], ",")
+			} else {
+				pm[attr] = vals
+			}
 		case "data":
 			pm[attr] = []map[string]any{}
 		default:
