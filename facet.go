@@ -95,11 +95,11 @@ func valsToStingMap(pm map[string]any, q url.Values) {
 			} else {
 				pm[attr] = vals
 			}
-		case "data", "dataFile":
+		case "data", "dataFile", "dataDir":
 			var err error
-			pm[attr], err = GetDataFromQuery(q)
+			pm["data"], err = GetDataFromQuery(q)
 			if err != nil {
-				pm[attr] = []map[string]any{}
+				pm["data"] = []map[string]any{}
 			}
 		case "uid":
 			if len(vals) == 1 {

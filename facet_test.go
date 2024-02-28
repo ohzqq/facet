@@ -13,7 +13,7 @@ import (
 const testDataFile = `testdata/data-dir/audiobooks.json`
 const testDataDir = `testdata/data-dir`
 const numBooks = 7253
-const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/audiobooks.json&uid=id`
+const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&dataDir=testdata/data-dir&uid=id`
 
 var defFieldsStr = `tags,authors,narrators,series`
 var defFieldsSingle = []string{"tags,authors,narrators,series"}
@@ -52,6 +52,9 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 	for _, facet := range facets.fields {
 		fmt.Printf("%+v\n", facet.Count())
 	}
+
+	//if len(facets.Data)
+	println(len(facets.Data))
 }
 
 func TestNewFacetsFromQuery(t *testing.T) {
