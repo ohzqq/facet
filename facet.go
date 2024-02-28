@@ -2,7 +2,10 @@ package facet
 
 import (
 	"encoding/json"
+	"io"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -92,8 +95,12 @@ func valsToStingMap(pm map[string]any, q url.Values) {
 			} else {
 				pm[attr] = vals
 			}
-		case "data":
-			pm[attr] = []map[string]any{}
+		case "data", "dataFile":
+			var err error
+			pm[attr], err = GetDataFromQuery(q)
+			if err != nil {
+				pm[attr] = []map[string]any{}
+			}
 		case "uid":
 			if len(vals) == 1 {
 				pm[attr] = vals[0]
@@ -102,4 +109,62 @@ func valsToStingMap(pm map[string]any, q url.Values) {
 			pm[attr] = vals
 		}
 	}
+}
+
+func GetDataFromQuery(q url.Values) ([]map[string]any, error) {
+	var data []map[string]any
+	var err error
+	switch {
+	case q.Has("dataFile"):
+		data, err = FileSrc(q.Get("dataFile"))
+	case q.Has("data"):
+		data, err = FileSrc(q.Get("data"))
+	case q.Has("dataDir"):
+		data, err = DirSrc(q.Get("dataDir"))
+	}
+	return data, err
+}
+
+// FileSrc takes json data files.
+func FileSrc(files ...string) ([]map[string]any, error) {
+	var data []map[string]any
+	for _, file := range files {
+		p, err := dataFromFile(file)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, p...)
+	}
+	return data, nil
+}
+
+// DirSrc parses json files from a directory.
+func DirSrc(dir string) ([]map[string]any, error) {
+	if !strings.HasSuffix(dir, "/") {
+		dir += "/"
+	}
+	files, err := filepath.Glob(dir + "*.json")
+	if err != nil {
+		return nil, err
+	}
+	return FileSrc(files...)
+}
+
+// DecodeData decodes data from a io.Reader.
+func DecodeData(r io.Reader) ([]map[string]any, error) {
+	var data []map[string]any
+	err := json.NewDecoder(r).Decode(&data)
+	if err != nil {
+		return data, err
+	}
+	return data, nil
+}
+
+func dataFromFile(d string) ([]map[string]any, error) {
+	data, err := os.Open(d)
+	if err != nil {
+		return nil, err
+	}
+	defer data.Close()
+	return DecodeData(data)
 }

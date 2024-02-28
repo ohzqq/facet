@@ -47,6 +47,11 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	facets.Calculate()
+	for _, facet := range facets.fields {
+		fmt.Printf("%+v\n", facet.Count())
+	}
 }
 
 func TestNewFacetsFromQuery(t *testing.T) {
