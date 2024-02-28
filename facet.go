@@ -3,6 +3,7 @@ package facet
 import (
 	"encoding/json"
 	"net/url"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
@@ -53,6 +54,10 @@ func New(params any) (*Facets, error) {
 	err := mapstructure.Decode(pm, facets)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(facets.Attrs) > 0 {
+		facets.Attrs = strings.Split(facets.Attrs[0], ",")
 	}
 
 	return facets, nil

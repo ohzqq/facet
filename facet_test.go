@@ -3,6 +3,7 @@ package facet
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"testing"
 
@@ -13,6 +14,11 @@ const testDataFile = `testdata/data-dir/audiobooks.json`
 const testDataDir = `testdata/data-dir`
 const numBooks = 7253
 const testQueryString = `attributesForFaceting=tags,authors,narrators,series&data=testdata/audiobooks.json`
+
+var testQueryVals = url.Values{
+	"attributesForFaceting": []string{"tags,authors,narrators,series"},
+	"data":                  []string{"testdata/audiobooks.json"},
+}
 
 func TestFacets(t *testing.T) {
 	data, err := loadData()
@@ -27,13 +33,35 @@ func TestFacets(t *testing.T) {
 	}
 }
 
-func TestNewFacetsFromQuery(t *testing.T) {
+func TestNewFacetsFromQueryString(t *testing.T) {
 	facets, err := New(testQueryString)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Printf("%+v\n", facets)
+	err = testFacetCfg(facets)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestNewFacetsFromQuery(t *testing.T) {
+	facets, err := New(testQueryVals)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = testFacetCfg(facets)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func testFacetCfg(facets *Facets) error {
+	if len(facets.Attrs) != 4 {
+		return fmt.Errorf("got %d attributes, expected %d\n", 4, len(facets.Attrs))
+	}
+	return nil
 }
 
 func dataToMap() (map[string]map[string]any, error) {
