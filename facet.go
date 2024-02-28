@@ -11,9 +11,9 @@ import (
 )
 
 type Facets struct {
-	Facets []*Field `json:"facets"`
+	Facets []*Field
 	data   []map[string]any
-	Query  url.Values
+	Params url.Values
 }
 
 func New(params any) (*Facets, error) {
@@ -22,18 +22,16 @@ func New(params any) (*Facets, error) {
 	var err error
 	switch p := params.(type) {
 	case string:
-		facets.Query, err = url.ParseQuery(p)
+		facets.Params, err = url.ParseQuery(p)
 		if err != nil {
 			return nil, err
 		}
-		//valsToMap(pm, facets.Query)
 	case url.Values:
-		facets.Query = p
-		//valsToMap(pm, facets.Query)
+		facets.Params = p
 	}
 
-	if facets.Query.Has("data") {
-		for _, file := range facets.Query["data"] {
+	if facets.Params.Has("data") {
+		for _, file := range facets.Params["data"] {
 			f, err := os.Open(file)
 			if err != nil {
 				return nil, err
@@ -54,27 +52,21 @@ func NewFacets() *Facets {
 }
 
 func (f Facets) UID() string {
-	if f.Query.Has("uid") {
-		return f.Query.Get("uid")
+	if f.Params.Has("uid") {
+		return f.Params.Get("uid")
 	}
 	return "id"
 }
 
 func (f Facets) Attrs() []string {
-	if f.Query.Has("attributesForFaceting") {
-		attrs := f.Query["attributesForFaceting"]
+	if f.Params.Has("attributesForFaceting") {
+		attrs := f.Params["attributesForFaceting"]
 		if len(attrs) == 1 {
 			return strings.Split(attrs[0], ",")
 		}
 		return attrs
 	}
 	return []string{}
-}
-
-func (f *Facets) Calculate() *Facets {
-	facets := CalculateFacets(f.data, f.Attrs(), f.UID())
-	f.Facets = facets
-	return f
 }
 
 func (f *Facets) DecodeData(r io.Reader) error {
@@ -92,14 +84,20 @@ func (f *Facets) DecodeData(r io.Reader) error {
 }
 
 func (f Facets) EncodeQuery() string {
-	if f.Query == nil {
-		f.Query = make(url.Values)
-		f.Query.Set("uid", f.UID())
-		for _, field := range f.Facets {
-			f.Query.Add("attributesForFaceting", field.Attr())
-		}
-	}
-	return f.Query.Encode()
+	return f.Params.Encode()
+}
+
+func (f *Facets) Calculate() *Facets {
+	facets := CalculateFacets(f.data, f.Attrs(), f.UID())
+	f.Facets = facets
+	return f
+}
+
+func (f *Facets) MarshalJSON() ([]byte, error) {
+	facets := make(map[string]any)
+	facets["query"] = f.EncodeQuery()
+
+	return json.Marshal(facets)
 }
 
 func CalculateFacets(data []map[string]any, fields []string, ident ...string) []*Field {
@@ -124,62 +122,4 @@ func CalculateFacets(data []map[string]any, fields []string, ident ...string) []
 		}
 	}
 	return facets
-}
-
-func valsToMap(pm map[string]any, q url.Values) {
-	for attr, vals := range q {
-		switch attr {
-		case "attributesForFaceting":
-			if len(vals) == 1 {
-				pm[attr] = strings.Split(vals[0], ",")
-			} else {
-				pm[attr] = vals
-			}
-		default:
-			pm[attr] = vals
-		}
-	}
-}
-
-func GetDataFromQuery(q url.Values) []map[string]any {
-	if q.Has("data") {
-		d, err := FileSrc(q["data"])
-		if err != nil {
-			return []map[string]any{}
-		}
-		return d
-	}
-	return []map[string]any{}
-}
-
-// FileSrc takes json data files.
-func FileSrc(files []string) ([]map[string]any, error) {
-	var data []map[string]any
-	for _, file := range files {
-		p, err := dataFromFile(file)
-		if err != nil {
-			return nil, err
-		}
-		data = append(data, p...)
-	}
-	return data, nil
-}
-
-func dataFromFile(d string) ([]map[string]any, error) {
-	data, err := os.Open(d)
-	if err != nil {
-		return nil, err
-	}
-	defer data.Close()
-	return DecodeData(data)
-}
-
-// DecodeData decodes data from a io.Reader.
-func DecodeData(r io.Reader) ([]map[string]any, error) {
-	var data []map[string]any
-	err := json.NewDecoder(r).Decode(&data)
-	if err != nil {
-		return data, err
-	}
-	return data, nil
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func (t *Field) SortTokens() []*Keyword {
-	tokens := t.GetTokens()
+	tokens := t.keywords
 
 	switch t.SortBy {
 	case SortByAlpha:

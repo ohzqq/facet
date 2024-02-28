@@ -41,7 +41,6 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 	}
 
 	//if len(facets.Data)
-	fmt.Printf("data %v\n", facets.data)
 	println(len(facets.data))
 }
 

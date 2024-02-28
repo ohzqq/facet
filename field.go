@@ -26,8 +26,8 @@ type Field struct {
 	Sep       string `json:"-"`
 	SortBy    string
 	Order     string
-	terms     []string
-	Keywords  map[string]*Keyword
+	keywords  []*Keyword
+	kwIdx     map[string]int
 	analyzer  Analyzer
 }
 
@@ -50,9 +50,9 @@ func NewFields(attrs []string) []*Field {
 
 func (f *Field) MarshalJSON() ([]byte, error) {
 	tokens := make(map[string]int)
-	for _, label := range f.terms {
-		token := f.FindByLabel(label)
-		tokens[label] = token.Count()
+	for _, token := range f.keywords {
+		//token := f.FindByLabel(label)
+		tokens[token.Label] = token.Count()
 	}
 	d, err := json.Marshal(tokens)
 	if err != nil {
@@ -61,25 +61,38 @@ func (f *Field) MarshalJSON() ([]byte, error) {
 	return d, err
 }
 
-func (t *Field) GetTokens() []*Keyword {
+func (t *Field) FindByLabel(label string) *Keyword {
+	for _, token := range t.keywords {
+		if token.Label == label {
+			return token
+		}
+	}
+	return NewItem(label)
+}
+
+func (f *Field) FindByIndex(ti ...int) []*Keyword {
 	var tokens []*Keyword
-	for _, label := range t.terms {
-		tok := t.FindByLabel(label)
-		tokens = append(tokens, tok)
+	for _, tok := range ti {
+		if tok < f.Count() {
+			tokens = append(tokens, f.keywords[tok])
+		}
 	}
 	return tokens
 }
 
 func (t *Field) Add(val any, ids []int) {
 	for _, token := range t.Tokenize(val) {
-		if t.Keywords == nil {
-			t.Keywords = make(map[string]*Keyword)
+		if t.kwIdx == nil {
+			t.kwIdx = make(map[string]int)
 		}
-		if _, ok := t.Keywords[token.Value]; !ok {
-			t.terms = append(t.terms, token.Label)
-			t.Keywords[token.Value] = token
+		if idx, ok := t.kwIdx[token.Value]; ok {
+			t.keywords[idx].Add(ids...)
+		} else {
+			idx = len(t.keywords)
+			//t.labels = append(t.labels, token.Label)
+			t.kwIdx[token.Value] = idx
+			t.keywords = append(t.keywords, token)
 		}
-		t.Keywords[token.Value].Add(ids...)
 	}
 }
 
@@ -113,24 +126,11 @@ func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any
 	return res
 }
 
-func (t *Field) FindByIndex(ti ...int) []*Keyword {
-	var tokens []*Keyword
-	toks := t.GetTokens()
-	total := t.Count()
-	for _, tok := range ti {
-		if tok < total {
-			tokens = append(tokens, toks[tok])
-		}
-	}
-	return tokens
-}
-
 func (t *Field) Search(term string) []*Keyword {
 	matches := fuzzy.FindFrom(term, t)
 	tokens := make([]*Keyword, len(matches))
-	all := t.GetTokens()
 	for i, match := range matches {
-		tokens[i] = all[match.Index]
+		tokens[i] = t.keywords[match.Index]
 	}
 	return tokens
 }
@@ -146,22 +146,20 @@ func (t *Field) Filter(val string) *roaring.Bitmap {
 
 func (t *Field) Fuzzy(term string) *roaring.Bitmap {
 	matches := fuzzy.FindFrom(term, t)
-	all := t.GetTokens()
 	bits := make([]*roaring.Bitmap, len(matches))
 	for i, match := range matches {
-		b := all[match.Index].Bitmap()
+		b := t.keywords[match.Index].Bitmap()
 		bits[i] = b
 	}
 	return roaring.ParOr(viper.GetInt("workers"), bits...)
 }
 
 func (t *Field) GetValues() []string {
-	sorted := t.GetTokens()
-	tokens := make([]string, len(sorted))
-	for i, t := range sorted {
-		tokens[i] = t.Value
+	vals := make([]string, len(t.keywords))
+	for i, token := range t.keywords {
+		vals[i] = token.Value
 	}
-	return tokens
+	return vals
 }
 
 // Len returns the number of items, to satisfy the fuzzy.Source interface.
@@ -171,30 +169,21 @@ func (t *Field) Len() int {
 
 // String returns an Item.Value, to satisfy the fuzzy.Source interface.
 func (t *Field) String(i int) string {
-	return t.terms[i]
+	return t.keywords[i].Label
 }
 
 func (t *Field) Find(val any) []*Keyword {
 	var tokens []*Keyword
 	for _, tok := range t.Tokenize(val) {
-		if token, ok := t.Keywords[tok.Value]; ok {
-			tokens = append(tokens, token)
+		if token, ok := t.kwIdx[tok.Value]; ok {
+			tokens = append(tokens, t.keywords[token])
 		}
 	}
 	return tokens
 }
 
-func (t *Field) FindByLabel(label string) *Keyword {
-	for _, token := range t.Keywords {
-		if token.Label == label {
-			return token
-		}
-	}
-	return NewItem(label)
-}
-
 func (t *Field) Count() int {
-	return len(t.Keywords)
+	return len(t.keywords)
 }
 
 func (f *Field) Attr() string {
