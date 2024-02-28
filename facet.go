@@ -11,9 +11,9 @@ import (
 
 type Facets struct {
 	fields []*Field
-	Attrs  []string         `mapstructure:"attributesForFaceting"`
-	Data   []map[string]any `mapstructure:"data"`
-	UID    string           `mapstructure:"uid,omitempty"`
+	Attrs  []string         `mapstructure:"attributesForFaceting" json:"attrs"`
+	Data   []map[string]any `mapstructure:"data" json:"data"`
+	UID    string           `mapstructure:"uid,omitempty" json:"uid,omitempty"`
 }
 
 func New(params any) (*Facets, error) {
@@ -29,23 +29,9 @@ func New(params any) (*Facets, error) {
 		if err != nil {
 			return nil, err
 		}
-		for attr, vals := range q {
-			switch attr {
-			case "data":
-				pm[attr] = []map[string]any{}
-			default:
-				pm[attr] = vals
-			}
-		}
+		valsToStingMap(pm, q)
 	case url.Values:
-		for attr, vals := range p {
-			switch attr {
-			case "data":
-				pm[attr] = []map[string]any{}
-			default:
-				pm[attr] = vals
-			}
-		}
+		valsToStingMap(pm, p)
 	case map[string]any:
 		pm = p
 	}
@@ -99,4 +85,15 @@ func CalculateFacets(data []map[string]any, fields []string, ident ...string) []
 		}
 	}
 	return facets
+}
+
+func valsToStingMap(pm map[string]any, q url.Values) {
+	for attr, vals := range q {
+		switch attr {
+		case "data":
+			pm[attr] = []map[string]any{}
+		default:
+			pm[attr] = vals
+		}
+	}
 }

@@ -68,12 +68,22 @@ func TestNewFacetsFromJSON(t *testing.T) {
 	raw["data"] = data
 	raw["attributesForFaceting"] = defaultFields
 
+	facets, err := New(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = testFacetCfg(facets)
+	if err != nil {
+		t.Error(err)
+	}
+
 	d, err := json.Marshal(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	facets, err := New(d)
+	facets, err = New(d)
 	if err != nil {
 		t.Fatal(err)
 	}
