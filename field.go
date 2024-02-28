@@ -49,10 +49,11 @@ func NewFields(attrs []string) []*Field {
 }
 
 func (f *Field) MarshalJSON() ([]byte, error) {
-	tokens := make(map[string]int)
+	tokens := make(map[string]map[string]any)
 	for _, token := range f.Keywords {
-		//token := f.FindByLabel(label)
-		tokens[token.Label] = token.Count()
+		tokens[token.Label] = make(map[string]any)
+		tokens[token.Label]["count"] = token.Count()
+		tokens[token.Label]["count"] = token.Count()
 	}
 	d, err := json.Marshal(tokens)
 	if err != nil {
@@ -67,7 +68,7 @@ func (f *Field) FindByLabel(label string) *Keyword {
 			return token
 		}
 	}
-	return NewItem(label)
+	return NewKeyword(label)
 }
 
 func (f *Field) FindByValue(val string) *Keyword {
@@ -76,7 +77,7 @@ func (f *Field) FindByValue(val string) *Keyword {
 			return token
 		}
 	}
-	return NewItem(val)
+	return NewKeyword(val)
 }
 
 func (f *Field) FindByIndex(ti ...int) []*Keyword {
