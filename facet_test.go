@@ -42,6 +42,18 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 
 	//if len(facets.Data)
 	println(len(facets.data))
+
+	//d, err := json.Marshal(facets)
+	//if err != nil {
+	//t.Error(err)
+	//}
+	//println(string(d))
+
+	authors := facets.GetFacet("authors")
+	res := authors.Search("amy lane")
+	for _, r := range res {
+		fmt.Printf("%+v\n", r.Items())
+	}
 }
 
 func TestNewFacetsFromQuery(t *testing.T) {

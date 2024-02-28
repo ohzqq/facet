@@ -2,6 +2,7 @@ package facet
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -83,6 +84,15 @@ func (f *Facets) DecodeData(r io.Reader) error {
 	return nil
 }
 
+func (f Facets) GetFacet(attr string) *Field {
+	for _, facet := range f.Facets {
+		if facet.Attribute == attr {
+			return facet
+		}
+	}
+	return &Field{}
+}
+
 func (f Facets) EncodeQuery() string {
 	return f.Params.Encode()
 }
@@ -95,7 +105,8 @@ func (f *Facets) Calculate() *Facets {
 
 func (f *Facets) MarshalJSON() ([]byte, error) {
 	facets := make(map[string]any)
-	facets["query"] = f.EncodeQuery()
+	facets["params"] = f.EncodeQuery()
+	facets["facets"] = f.Facets
 
 	return json.Marshal(facets)
 }
@@ -114,6 +125,9 @@ func CalculateFacets(data []map[string]any, fields []string, ident ...string) []
 		}
 		for _, facet := range facets {
 			if val, ok := d[facet.Attribute]; ok {
+				if auth := cast.ToString(val); auth == "mafia" {
+					fmt.Printf("%+v\n", val)
+				}
 				facet.Add(
 					val,
 					[]int{id},

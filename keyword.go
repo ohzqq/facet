@@ -59,13 +59,11 @@ func (f *Keyword) Add(ids ...int) {
 
 func (f *Keyword) MarshalJSON() ([]byte, error) {
 	item := map[string]any{
-		f.Label: f.Count(),
+		"count": f.Count(),
+		"label": f.Label,
+		"items": f.Items(),
 	}
-	d, err := json.Marshal(item)
-	if err != nil {
-		return nil, err
-	}
-	return d, nil
+	return json.Marshal(item)
 }
 
 type keyword struct{}
