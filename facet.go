@@ -1,29 +1,61 @@
 package facet
 
-import "github.com/spf13/cast"
+import (
+	"encoding/json"
+
+	"github.com/spf13/cast"
+)
 
 type Facets struct {
-	fields map[string]*Field
+	fields []*Field
+	Attrs  []string `mapstructure:"attributesForFaceting"`
+	Data   []map[string]any
+	UID    string
 }
 
-func New(data map[string]map[string]any, attrs []string) *Facets {
-	return &Facets{
-		fields: CalculateFacets(data, attrs),
+func New(params any) (*Facets, error) {
+	pm := make(map[string]any)
+	switch p := params.(type) {
+	case []byte:
+		err := json.Unmarshal(p, &pm)
+		if err != nil {
+			return nil, err
+		}
+	case string:
 	}
 }
 
-func CalculateFacets(data map[string]map[string]any, fields []string) map[string]*Field {
-	facets := NewFields(fields)
-	return calculateFacets(data, facets)
+func NewFacets(data []map[string]any, attrs []string) *Facets {
+	return &Facets{
+		UID:   "id",
+		Attrs: attrs,
+		Data:  data,
+	}
 }
 
-func calculateFacets(data map[string]map[string]any, facets map[string]*Field) map[string]*Field {
+func (f *Facets) Calculate() *Facets {
+	facets := CalculateFacets(f.Data, f.Attrs, f.UID)
+	f.fields = facets
+	return f
+}
+
+func CalculateFacets(data []map[string]any, fields []string, ident ...string) []*Field {
+	facets := NewFields(fields)
+
+	uid := "id"
+	if len(ident) > 0 {
+		uid = ident[0]
+	}
+
 	for id, d := range data {
-		for attr, facet := range facets {
-			if val, ok := d[attr]; ok {
+		if i, ok := d[uid]; ok {
+			id = cast.ToInt(i)
+		}
+		for _, facet := range facets {
+			if val, ok := d[facet.Attribute]; ok {
 				facet.Add(
 					val,
-					[]int{cast.ToInt(id)},
+					[]int{id},
 				)
 			}
 		}

@@ -40,12 +40,11 @@ func NewField(attr string) *Field {
 	return f
 }
 
-func NewFields(attrs []string) map[string]*Field {
-	fields := make(map[string]*Field)
-	for _, attr := range attrs {
-		fields[attr] = NewField(attr)
+func NewFields(attrs []string) []*Field {
+	fields := make([]*Field, len(attrs))
+	for i, attr := range attrs {
+		fields[i] = NewField(attr)
 	}
-
 	return fields
 }
 

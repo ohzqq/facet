@@ -14,12 +14,13 @@ const testDataDir = `testdata/data-dir`
 const numBooks = 7253
 
 func TestFacets(t *testing.T) {
-	data, err := dataToMap()
+	data, err := loadData()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	facets := New(data, []string{"tags", "authors", "narrators", "series"})
+	facets := NewFacets(data, []string{"tags", "authors", "narrators", "series"})
+	facets.Calculate()
 	for _, facet := range facets.fields {
 		fmt.Printf("%+v\n", facet.Count())
 	}
