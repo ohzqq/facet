@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -95,12 +94,8 @@ func valsToStingMap(pm map[string]any, q url.Values) {
 			} else {
 				pm[attr] = vals
 			}
-		case "data", "dataFile", "dataDir":
-			var err error
-			pm["data"], err = GetDataFromQuery(q)
-			if err != nil {
-				pm["data"] = []map[string]any{}
-			}
+		case "data":
+			pm["data"] = GetDataFromQuery(q)
 		case "uid":
 			if len(vals) == 1 {
 				pm[attr] = vals[0]
@@ -111,22 +106,19 @@ func valsToStingMap(pm map[string]any, q url.Values) {
 	}
 }
 
-func GetDataFromQuery(q url.Values) ([]map[string]any, error) {
-	var data []map[string]any
-	var err error
-	switch {
-	case q.Has("dataFile"):
-		data, err = FileSrc(q.Get("dataFile"))
-	case q.Has("data"):
-		data, err = FileSrc(q.Get("data"))
-	case q.Has("dataDir"):
-		data, err = DirSrc(q.Get("dataDir"))
+func GetDataFromQuery(q url.Values) []map[string]any {
+	if q.Has("data") {
+		d, err := FileSrc(q["data"])
+		if err != nil {
+			return []map[string]any{}
+		}
+		return d
 	}
-	return data, err
+	return []map[string]any{}
 }
 
 // FileSrc takes json data files.
-func FileSrc(files ...string) ([]map[string]any, error) {
+func FileSrc(files []string) ([]map[string]any, error) {
 	var data []map[string]any
 	for _, file := range files {
 		p, err := dataFromFile(file)
@@ -136,18 +128,6 @@ func FileSrc(files ...string) ([]map[string]any, error) {
 		data = append(data, p...)
 	}
 	return data, nil
-}
-
-// DirSrc parses json files from a directory.
-func DirSrc(dir string) ([]map[string]any, error) {
-	if !strings.HasSuffix(dir, "/") {
-		dir += "/"
-	}
-	files, err := filepath.Glob(dir + "*.json")
-	if err != nil {
-		return nil, err
-	}
-	return FileSrc(files...)
 }
 
 // DecodeData decodes data from a io.Reader.

@@ -13,7 +13,7 @@ import (
 const testDataFile = `testdata/data-dir/audiobooks.json`
 const testDataDir = `testdata/data-dir`
 const numBooks = 7253
-const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&dataDir=testdata/data-dir&uid=id`
+const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/data-dir/audiobooks.json&data=testdata/audiobooks.json&&uid=id`
 
 var defFieldsStr = `tags,authors,narrators,series`
 var defFieldsSingle = []string{"tags,authors,narrators,series"}
