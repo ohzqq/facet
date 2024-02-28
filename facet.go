@@ -2,7 +2,9 @@ package facet
 
 import (
 	"encoding/json"
+	"net/url"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 )
 
@@ -22,7 +24,28 @@ func New(params any) (*Facets, error) {
 			return nil, err
 		}
 	case string:
+		q, err := url.ParseQuery(p)
+		if err != nil {
+			return nil, err
+		}
+		for attr, vals := range q {
+			pm[attr] = vals
+		}
+	case url.Values:
+		for attr, vals := range p {
+			pm[attr] = vals
+		}
+	case map[string]any:
+		pm = p
 	}
+
+	facets := &Facets{}
+	err := mapstructure.Decode(pm, facets)
+	if err != nil {
+		return nil, err
+	}
+
+	return facets, nil
 }
 
 func NewFacets(data []map[string]any, attrs []string) *Facets {
