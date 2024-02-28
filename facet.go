@@ -15,11 +15,15 @@ type Facets struct {
 	Facets []*Field         `json:"facets"`
 	Attrs  []string         `mapstructure:"attributesForFaceting" json:"attrs"`
 	Data   []map[string]any `mapstructure:"data" json:"data"`
-	UID    string           `mapstructure:"uid,omitempty" json:"uid,omitempty"`
+	Query  url.Values
+	UID    string `mapstructure:"uid,omitempty" json:"uid,omitempty"`
 }
 
 func New(params any) (*Facets, error) {
+	facets := NewFacets()
+
 	pm := make(map[string]any)
+	var err error
 	switch p := params.(type) {
 	case []byte:
 		err := json.Unmarshal(p, &pm)
@@ -27,19 +31,19 @@ func New(params any) (*Facets, error) {
 			return nil, err
 		}
 	case string:
-		q, err := url.ParseQuery(p)
+		facets.Query, err = url.ParseQuery(p)
 		if err != nil {
 			return nil, err
 		}
-		valsToStingMap(pm, q)
+		valsToStingMap(pm, facets.Query)
 	case url.Values:
-		valsToStingMap(pm, p)
+		facets.Query = p
+		valsToStingMap(pm, facets.Query)
 	case map[string]any:
 		pm = p
 	}
 
-	facets := &Facets{}
-	err := mapstructure.Decode(pm, facets)
+	err = mapstructure.Decode(pm, facets)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +51,9 @@ func New(params any) (*Facets, error) {
 	return facets, nil
 }
 
-func NewFacets(data []map[string]any, attrs []string) *Facets {
+func NewFacets() *Facets {
 	return &Facets{
-		UID:   "id",
-		Attrs: attrs,
-		Data:  data,
+		UID: "id",
 	}
 }
 
@@ -59,6 +61,17 @@ func (f *Facets) Calculate() *Facets {
 	facets := CalculateFacets(f.Data, f.Attrs, f.UID)
 	f.Facets = facets
 	return f
+}
+
+func (f Facets) EncodeQuery() string {
+	if f.Query == nil {
+		f.Query = make(url.Values)
+		f.Query.Set("uid", f.UID)
+		for _, field := range f.Facets {
+			f.Query.Add("attributesForFaceting", field.Attr())
+		}
+	}
+	return f.Query.Encode()
 }
 
 func CalculateFacets(data []map[string]any, fields []string, ident ...string) []*Field {

@@ -174,26 +174,6 @@ func (t *Field) String(i int) string {
 	return t.terms[i]
 }
 
-func parseAttr(field *Field, attr string) {
-	i := 0
-	for attr != "" {
-		var a string
-		a, attr, _ = strings.Cut(attr, ":")
-		if a == "" {
-			continue
-		}
-		switch i {
-		case 0:
-			field.Attribute = a
-		case 1:
-			field.SortBy = a
-		case 2:
-			field.Order = a
-		}
-		i++
-	}
-}
-
 func (t *Field) Find(val any) []*Keyword {
 	var tokens []*Keyword
 	for _, tok := range t.Tokenize(val) {
@@ -215,4 +195,37 @@ func (t *Field) FindByLabel(label string) *Keyword {
 
 func (t *Field) Count() int {
 	return len(t.Keywords)
+}
+
+func (f *Field) Attr() string {
+	attr := f.Attribute
+	if f.SortBy != "" {
+		attr += ":"
+		attr += f.SortBy
+	}
+	if f.Order != "" {
+		attr += ":"
+		attr += f.Order
+	}
+	return attr
+}
+
+func parseAttr(field *Field, attr string) {
+	i := 0
+	for attr != "" {
+		var a string
+		a, attr, _ = strings.Cut(attr, ":")
+		if a == "" {
+			continue
+		}
+		switch i {
+		case 0:
+			field.Attribute = a
+		case 1:
+			field.SortBy = a
+		case 2:
+			field.Order = a
+		}
+		i++
+	}
 }

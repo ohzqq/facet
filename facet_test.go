@@ -24,19 +24,6 @@ var testQueryVals = url.Values{
 	"data":                  []string{"testdata/audiobooks.json"},
 }
 
-func TestFacets(t *testing.T) {
-	data, err := loadData()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	facets := NewFacets(data, []string{"tags", "authors", "narrators", "series"})
-	facets.Calculate()
-	for _, facet := range facets.Facets {
-		fmt.Printf("%+v\n", facet.Count())
-	}
-}
-
 func TestNewFacetsFromQueryString(t *testing.T) {
 	facets, err := New(testQueryString)
 	if err != nil {
@@ -102,12 +89,23 @@ func TestNewFacetsFromJSON(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	println(facets.EncodeQuery())
 }
 
 func testFacetCfg(facets *Facets) error {
 	if len(facets.Attrs) != 4 {
 		return fmt.Errorf("got %d attributes, expected %d\n", len(facets.Attrs), 4)
 	}
+
+	facets.Calculate()
+	if len(facets.Facets) != 4 {
+		return fmt.Errorf("got %d attributes, expected %d\n", len(facets.Facets), 4)
+	}
+	//for _, facet := range facets.Facets {
+	//fmt.Printf("%+v\n", facet.Count())
+	//}
+
 	return nil
 }
 
