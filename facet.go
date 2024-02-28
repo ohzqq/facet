@@ -25,20 +25,15 @@ func New(params any) (*Facets, error) {
 	pm := make(map[string]any)
 	var err error
 	switch p := params.(type) {
-	case []byte:
-		err := json.Unmarshal(p, &pm)
-		if err != nil {
-			return nil, err
-		}
 	case string:
 		facets.Query, err = url.ParseQuery(p)
 		if err != nil {
 			return nil, err
 		}
-		valsToStingMap(pm, facets.Query)
+		valsToMap(pm, facets.Query)
 	case url.Values:
 		facets.Query = p
-		valsToStingMap(pm, facets.Query)
+		valsToMap(pm, facets.Query)
 	case map[string]any:
 		pm = p
 	}
@@ -46,6 +41,21 @@ func New(params any) (*Facets, error) {
 	err = mapstructure.Decode(pm, facets)
 	if err != nil {
 		return nil, err
+	}
+
+	if facets.Query.Has("data") {
+		println("has data")
+		for _, file := range facets.Query["data"] {
+			f, err := os.Open(file)
+			if err != nil {
+				return nil, err
+			}
+			defer f.Close()
+			err = facets.DecodeData(f)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return facets, nil
@@ -61,6 +71,20 @@ func (f *Facets) Calculate() *Facets {
 	facets := CalculateFacets(f.Data, f.Attrs, f.UID)
 	f.Facets = facets
 	return f
+}
+
+func (f *Facets) DecodeData(r io.Reader) error {
+	dec := json.NewDecoder(r)
+	for {
+		m := make(map[string]any)
+		if err := dec.Decode(&m); err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+		f.Data = append(f.Data, m)
+	}
+	return nil
 }
 
 func (f Facets) EncodeQuery() string {
@@ -98,7 +122,7 @@ func CalculateFacets(data []map[string]any, fields []string, ident ...string) []
 	return facets
 }
 
-func valsToStingMap(pm map[string]any, q url.Values) {
+func valsToMap(pm map[string]any, q url.Values) {
 	for attr, vals := range q {
 		switch attr {
 		case "attributesForFaceting":
@@ -108,7 +132,7 @@ func valsToStingMap(pm map[string]any, q url.Values) {
 				pm[attr] = vals
 			}
 		case "data":
-			pm["data"] = GetDataFromQuery(q)
+			//pm["data"] = GetDataFromQuery(q)
 		case "uid":
 			if len(vals) == 1 {
 				pm[attr] = vals[0]

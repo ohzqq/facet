@@ -13,7 +13,7 @@ import (
 const testDataFile = `testdata/data-dir/audiobooks.json`
 const testDataDir = `testdata/data-dir`
 const numBooks = 7253
-const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/data-dir/audiobooks.json&uid=id`
+const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`
 
 var defFieldsStr = `tags,authors,narrators,series`
 var defFieldsSingle = []string{"tags,authors,narrators,series"}
@@ -21,7 +21,7 @@ var defFieldsSlice = []string{"tags", "authors", "narrators", "series"}
 
 var testQueryVals = url.Values{
 	"attributesForFaceting": defFieldsSingle,
-	"data":                  []string{"testdata/audiobooks.json"},
+	"data":                  []string{"testdata/ndbooks.json"},
 }
 
 func TestNewFacetsFromQueryString(t *testing.T) {
@@ -54,43 +54,6 @@ func TestNewFacetsFromQuery(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-}
-
-func TestNewFacetsFromJSON(t *testing.T) {
-	raw := make(map[string]any)
-	data, err := loadData()
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw["data"] = data
-	raw["attributesForFaceting"] = defFieldsSlice
-
-	facets, err := New(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = testFacetCfg(facets)
-	if err != nil {
-		t.Error(err)
-	}
-
-	d, err := json.Marshal(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	facets, err = New(d)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = testFacetCfg(facets)
-	if err != nil {
-		t.Error(err)
-	}
-
-	println(facets.EncodeQuery())
 }
 
 func testFacetCfg(facets *Facets) error {
