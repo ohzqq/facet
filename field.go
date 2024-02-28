@@ -26,7 +26,7 @@ type Field struct {
 	Sep       string `json:"-"`
 	SortBy    string
 	Order     string
-	keywords  []*Keyword
+	Keywords  []*Keyword
 	kwIdx     map[string]int
 	analyzer  Analyzer
 }
@@ -50,7 +50,7 @@ func NewFields(attrs []string) []*Field {
 
 func (f *Field) MarshalJSON() ([]byte, error) {
 	tokens := make(map[string]int)
-	for _, token := range f.keywords {
+	for _, token := range f.Keywords {
 		//token := f.FindByLabel(label)
 		tokens[token.Label] = token.Count()
 	}
@@ -61,8 +61,8 @@ func (f *Field) MarshalJSON() ([]byte, error) {
 	return d, err
 }
 
-func (t *Field) FindByLabel(label string) *Keyword {
-	for _, token := range t.keywords {
+func (f *Field) FindByLabel(label string) *Keyword {
+	for _, token := range f.Keywords {
 		if token.Label == label {
 			return token
 		}
@@ -70,34 +70,42 @@ func (t *Field) FindByLabel(label string) *Keyword {
 	return NewItem(label)
 }
 
+func (f *Field) FindByValue(val string) *Keyword {
+	for _, token := range f.Keywords {
+		if token.Value == val {
+			return token
+		}
+	}
+	return NewItem(val)
+}
+
 func (f *Field) FindByIndex(ti ...int) []*Keyword {
 	var tokens []*Keyword
 	for _, tok := range ti {
 		if tok < f.Count() {
-			tokens = append(tokens, f.keywords[tok])
+			tokens = append(tokens, f.Keywords[tok])
 		}
 	}
 	return tokens
 }
 
-func (t *Field) Add(val any, ids []int) {
-	for _, token := range t.Tokenize(val) {
-		if t.kwIdx == nil {
-			t.kwIdx = make(map[string]int)
+func (f *Field) Add(val any, ids []int) {
+	for _, token := range f.Tokenize(val) {
+		if f.kwIdx == nil {
+			f.kwIdx = make(map[string]int)
 		}
-		if idx, ok := t.kwIdx[token.Value]; ok {
-			t.keywords[idx].Add(ids...)
+		if idx, ok := f.kwIdx[token.Value]; ok {
+			f.Keywords[idx].Add(ids...)
 		} else {
-			idx = len(t.keywords)
-			//t.labels = append(t.labels, token.Label)
-			t.kwIdx[token.Value] = idx
-			t.keywords = append(t.keywords, token)
+			idx = len(f.Keywords)
+			f.kwIdx[token.Value] = idx
+			f.Keywords = append(f.Keywords, token)
 		}
 	}
 }
 
-func (t *Field) Tokenize(val any) []*Keyword {
-	return t.analyzer.Tokenize(val)
+func (f *Field) Tokenize(val any) []*Keyword {
+	return f.analyzer.Tokenize(val)
 }
 
 func GetFieldItems(data []map[string]any, field *Field) []map[string]any {
@@ -126,17 +134,17 @@ func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any
 	return res
 }
 
-func (t *Field) Search(term string) []*Keyword {
-	matches := fuzzy.FindFrom(term, t)
+func (f *Field) Search(term string) []*Keyword {
+	matches := fuzzy.FindFrom(term, f)
 	tokens := make([]*Keyword, len(matches))
 	for i, match := range matches {
-		tokens[i] = t.keywords[match.Index]
+		tokens[i] = f.Keywords[match.Index]
 	}
 	return tokens
 }
 
-func (t *Field) Filter(val string) *roaring.Bitmap {
-	tokens := t.Find(val)
+func (f *Field) Filter(val string) *roaring.Bitmap {
+	tokens := f.Find(val)
 	bits := make([]*roaring.Bitmap, len(tokens))
 	for i, token := range tokens {
 		bits[i] = token.Bitmap()
@@ -144,46 +152,46 @@ func (t *Field) Filter(val string) *roaring.Bitmap {
 	return roaring.ParAnd(viper.GetInt("workers"), bits...)
 }
 
-func (t *Field) Fuzzy(term string) *roaring.Bitmap {
-	matches := fuzzy.FindFrom(term, t)
+func (f *Field) Fuzzy(term string) *roaring.Bitmap {
+	matches := fuzzy.FindFrom(term, f)
 	bits := make([]*roaring.Bitmap, len(matches))
 	for i, match := range matches {
-		b := t.keywords[match.Index].Bitmap()
+		b := f.Keywords[match.Index].Bitmap()
 		bits[i] = b
 	}
 	return roaring.ParOr(viper.GetInt("workers"), bits...)
 }
 
-func (t *Field) GetValues() []string {
-	vals := make([]string, len(t.keywords))
-	for i, token := range t.keywords {
+func (f *Field) GetValues() []string {
+	vals := make([]string, len(f.Keywords))
+	for i, token := range f.Keywords {
 		vals[i] = token.Value
 	}
 	return vals
 }
 
 // Len returns the number of items, to satisfy the fuzzy.Source interface.
-func (t *Field) Len() int {
-	return t.Count()
+func (f *Field) Len() int {
+	return f.Count()
 }
 
 // String returns an Item.Value, to satisfy the fuzzy.Source interface.
-func (t *Field) String(i int) string {
-	return t.keywords[i].Label
+func (f *Field) String(i int) string {
+	return f.Keywords[i].Label
 }
 
-func (t *Field) Find(val any) []*Keyword {
+func (f *Field) Find(val any) []*Keyword {
 	var tokens []*Keyword
-	for _, tok := range t.Tokenize(val) {
-		if token, ok := t.kwIdx[tok.Value]; ok {
-			tokens = append(tokens, t.keywords[token])
+	for _, tok := range f.Tokenize(val) {
+		if token, ok := f.kwIdx[tok.Value]; ok {
+			tokens = append(tokens, f.Keywords[token])
 		}
 	}
 	return tokens
 }
 
-func (t *Field) Count() int {
-	return len(t.keywords)
+func (f *Field) Count() int {
+	return len(f.Keywords)
 }
 
 func (f *Field) Attr() string {
