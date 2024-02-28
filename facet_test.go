@@ -15,8 +15,10 @@ const testDataDir = `testdata/data-dir`
 const numBooks = 7253
 const testQueryString = `attributesForFaceting=tags,authors,narrators,series&data=testdata/audiobooks.json`
 
+var defaultFields = []string{"tags,authors,narrators,series"}
+
 var testQueryVals = url.Values{
-	"attributesForFaceting": []string{"tags,authors,narrators,series"},
+	"attributesForFaceting": defaultFields,
 	"data":                  []string{"testdata/audiobooks.json"},
 }
 
@@ -47,6 +49,31 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 
 func TestNewFacetsFromQuery(t *testing.T) {
 	facets, err := New(testQueryVals)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = testFacetCfg(facets)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestNewFacetsFromJSON(t *testing.T) {
+	raw := make(map[string]any)
+	data, err := loadData()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw["data"] = data
+	raw["attributesForFaceting"] = defaultFields
+
+	d, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	facets, err := New(d)
 	if err != nil {
 		t.Fatal(err)
 	}
