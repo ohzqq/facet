@@ -32,7 +32,7 @@ func TestFacets(t *testing.T) {
 
 	facets := NewFacets(data, []string{"tags", "authors", "narrators", "series"})
 	facets.Calculate()
-	for _, facet := range facets.fields {
+	for _, facet := range facets.Facets {
 		fmt.Printf("%+v\n", facet.Count())
 	}
 }
@@ -49,7 +49,7 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 	}
 
 	facets.Calculate()
-	for _, facet := range facets.fields {
+	for _, facet := range facets.Facets {
 		fmt.Printf("%+v\n", facet.Count())
 	}
 

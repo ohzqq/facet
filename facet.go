@@ -12,7 +12,7 @@ import (
 )
 
 type Facets struct {
-	fields []*Field
+	Facets []*Field
 	Attrs  []string         `mapstructure:"attributesForFaceting" json:"attrs"`
 	Data   []map[string]any `mapstructure:"data" json:"data"`
 	UID    string           `mapstructure:"uid,omitempty" json:"uid,omitempty"`
@@ -57,7 +57,7 @@ func NewFacets(data []map[string]any, attrs []string) *Facets {
 
 func (f *Facets) Calculate() *Facets {
 	facets := CalculateFacets(f.Data, f.Attrs, f.UID)
-	f.fields = facets
+	f.Facets = facets
 	return f
 }
 
@@ -130,6 +130,15 @@ func FileSrc(files []string) ([]map[string]any, error) {
 	return data, nil
 }
 
+func dataFromFile(d string) ([]map[string]any, error) {
+	data, err := os.Open(d)
+	if err != nil {
+		return nil, err
+	}
+	defer data.Close()
+	return DecodeData(data)
+}
+
 // DecodeData decodes data from a io.Reader.
 func DecodeData(r io.Reader) ([]map[string]any, error) {
 	var data []map[string]any
@@ -138,13 +147,4 @@ func DecodeData(r io.Reader) ([]map[string]any, error) {
 		return data, err
 	}
 	return data, nil
-}
-
-func dataFromFile(d string) ([]map[string]any, error) {
-	data, err := os.Open(d)
-	if err != nil {
-		return nil, err
-	}
-	defer data.Close()
-	return DecodeData(data)
 }
