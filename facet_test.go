@@ -12,6 +12,7 @@ import (
 const testDataFile = `testdata/data-dir/audiobooks.json`
 const testDataDir = `testdata/data-dir`
 const numBooks = 7253
+const testQueryString = `attributesForFaceting=tags,authors,narrators,series&data=testdata/audiobooks.json`
 
 func TestFacets(t *testing.T) {
 	data, err := loadData()
@@ -24,6 +25,15 @@ func TestFacets(t *testing.T) {
 	for _, facet := range facets.fields {
 		fmt.Printf("%+v\n", facet.Count())
 	}
+}
+
+func TestNewFacetsFromQuery(t *testing.T) {
+	facets, err := New(testQueryString)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Printf("%+v\n", facets)
 }
 
 func dataToMap() (map[string]map[string]any, error) {

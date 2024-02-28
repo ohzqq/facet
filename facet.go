@@ -10,9 +10,9 @@ import (
 
 type Facets struct {
 	fields []*Field
-	Attrs  []string `mapstructure:"attributesForFaceting"`
-	Data   []map[string]any
-	UID    string
+	Attrs  []string         `mapstructure:"attributesForFaceting"`
+	Data   []map[string]any `mapstructure:"data"`
+	UID    string           `mapstructure:"uid,omitempty"`
 }
 
 func New(params any) (*Facets, error) {
@@ -29,11 +29,21 @@ func New(params any) (*Facets, error) {
 			return nil, err
 		}
 		for attr, vals := range q {
-			pm[attr] = vals
+			switch attr {
+			case "data":
+				pm[attr] = []map[string]any{}
+			default:
+				pm[attr] = vals
+			}
 		}
 	case url.Values:
 		for attr, vals := range p {
-			pm[attr] = vals
+			switch attr {
+			case "data":
+				pm[attr] = []map[string]any{}
+			default:
+				pm[attr] = vals
+			}
 		}
 	case map[string]any:
 		pm = p
