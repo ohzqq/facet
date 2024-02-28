@@ -94,6 +94,10 @@ func valsToStingMap(pm map[string]any, q url.Values) {
 			}
 		case "data":
 			pm[attr] = []map[string]any{}
+		case "uid":
+			if len(vals) == 1 {
+				pm[attr] = vals[0]
+			}
 		default:
 			pm[attr] = vals
 		}
