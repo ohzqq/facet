@@ -36,6 +36,11 @@ func (f *Keyword) SetValue(txt string) *Keyword {
 	return f
 }
 
+func (kw *Keyword) Items() []int {
+	i := kw.bits.ToArray()
+	return cast.ToIntSlice(i)
+}
+
 func (f *Keyword) Count() int {
 	return int(f.bits.GetCardinality())
 }

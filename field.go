@@ -51,9 +51,10 @@ func NewFields(attrs []string) []*Field {
 func (f *Field) MarshalJSON() ([]byte, error) {
 	tokens := make(map[string]map[string]any)
 	for _, token := range f.Keywords {
-		tokens[token.Label] = make(map[string]any)
-		tokens[token.Label]["count"] = token.Count()
-		tokens[token.Label]["count"] = token.Count()
+		tokens[token.Label] = map[string]any{
+			"count": token.Count(),
+			"items": token.Items(),
+		}
 	}
 	d, err := json.Marshal(tokens)
 	if err != nil {
