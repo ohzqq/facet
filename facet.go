@@ -103,6 +103,9 @@ func (f *Facets) Calculate() *Facets {
 	return f
 }
 
+func (f *Facets) Search(q any) *Facets {
+}
+
 func (f *Facets) MarshalJSON() ([]byte, error) {
 	facets := make(map[string]any)
 	facets["params"] = f.EncodeQuery()
