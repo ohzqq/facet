@@ -35,10 +35,10 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 		t.Error(err)
 	}
 
-	facets.Calculate()
-	for _, facet := range facets.Facets {
-		fmt.Printf("%+v\n", facet.Count())
-	}
+	//facets.Calculate()
+	//for _, facet := range facets.Facets {
+	//fmt.Printf("%+v\n", facet.Count())
+	//}
 
 	//if len(facets.Data)
 	println(len(facets.data))
@@ -50,9 +50,10 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 	//println(string(d))
 
 	authors := facets.GetFacet("authors")
-	res := authors.Search("amy lane")
+	res := authors.Search("adam")
+	//fmt.Printf("%s: %+v\n", res.Label, res.Items())
 	for _, r := range res {
-		fmt.Printf("%+v\n", r.Items())
+		fmt.Printf("%s: %+v\n", r.Label, r.Items())
 	}
 }
 

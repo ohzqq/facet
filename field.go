@@ -89,7 +89,6 @@ func (f *Field) FindByIndex(ti ...int) []*Keyword {
 }
 
 func (f *Field) Add(val any, ids []int) {
-
 	for _, token := range f.Tokenize(val) {
 		if f.kwIdx == nil {
 			f.kwIdx = make(map[string]int)
@@ -99,6 +98,7 @@ func (f *Field) Add(val any, ids []int) {
 		} else {
 			idx = len(f.keywords)
 			f.kwIdx[token.Value] = idx
+			token.Add(ids...)
 			f.keywords = append(f.keywords, token)
 		}
 	}
