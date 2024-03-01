@@ -83,6 +83,16 @@ func TestFilterStrings(t *testing.T) {
 		if num := facets.Count(); num != f.want {
 			t.Errorf("got %d results, wanted %d\n", num, f.want)
 		}
+
+		for _, facet := range facets.Facets {
+			if num, ok := facetCount[facet.Attribute]; ok {
+				if num != facet.Count() {
+					t.Errorf("%v got %d, expected %d \n", facet.Attribute, facet.Count(), num)
+				}
+			} else {
+				t.Errorf("attr %s not found\n", facet.Attribute)
+			}
+		}
 	}
 
 }

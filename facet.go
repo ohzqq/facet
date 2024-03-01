@@ -2,6 +2,8 @@ package facet
 
 import (
 	"encoding/json"
+	"log"
+	"os"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/spf13/cast"
@@ -27,11 +29,6 @@ func New(params any) (*Facets, error) {
 
 	facets.Facets = NewFields(facets.Attrs())
 
-	facets.data, err = facets.Data()
-	if err != nil {
-		return nil, err
-	}
-
 	facets.Calculate()
 
 	if facets.vals.Has("facetFilters") {
@@ -53,6 +50,12 @@ func NewFacets() *Facets {
 }
 
 func (f *Facets) Calculate() *Facets {
+	var err error
+	f.data, err = f.Data()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	uid := f.UID()
 
 	for id, d := range f.data {
@@ -88,8 +91,19 @@ func (f *Facets) FilterBits(bits *roaring.Bitmap) []int {
 	return cast.ToIntSlice(bits.ToArray())
 }
 
-//func (f *Facets) GetByID(ids ...string) []map[string]any {
-//}
+func (f *Facets) GetByID(ids ...int) []map[string]any {
+	uid := f.UID()
+	var res []map[string]any
+	for id, d := range f.data {
+		if i, ok := d[uid]; ok {
+			id = cast.ToInt(i)
+		}
+		if f.bits.ContainsInt(id) {
+			res = append(res, d)
+		}
+	}
+	return res
+}
 
 func (f Facets) GetFacet(attr string) *Field {
 	for _, facet := range f.Facets {
@@ -98,6 +112,31 @@ func (f Facets) GetFacet(attr string) *Field {
 		}
 	}
 	return &Field{}
+}
+
+func (p Facets) Data() ([]map[string]any, error) {
+	var data []map[string]any
+
+	if len(p.Hits) > 0 {
+		return p.GetByID(p.Hits...), nil
+	}
+
+	if p.vals.Has("data") {
+		for _, file := range p.vals["data"] {
+			f, err := os.Open(file)
+			if err != nil {
+				return nil, err
+			}
+			defer f.Close()
+
+			err = DecodeData(f, &data)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return data, nil
 }
 
 func (f Facets) Count() int {

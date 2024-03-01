@@ -29,6 +29,13 @@ var testQueryVals = url.Values{
 	"data":                  []string{"testdata/ndbooks.json"},
 }
 
+var facetCount = map[string]int{
+	"tags":      217,
+	"authors":   1602,
+	"series":    1722,
+	"narrators": 1412,
+}
+
 func TestNewFacetsFromQueryString(t *testing.T) {
 	facets, err := New(testQueryString)
 	if err != nil {
@@ -55,6 +62,16 @@ func TestNewFacetsFromQuery(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	for _, facet := range facets.Facets {
+		if num, ok := facetCount[facet.Attribute]; ok {
+			if num != facet.Count() {
+				t.Errorf("%v got %d, expected %d \n", facet.Attribute, facet.Count(), num)
+			}
+		} else {
+			t.Errorf("attr %s not found\n", facet.Attribute)
+		}
+	}
 }
 
 func testFacetCfg(facets *Facets) error {
@@ -66,9 +83,6 @@ func testFacetCfg(facets *Facets) error {
 	if len(facets.Facets) != 4 {
 		return fmt.Errorf("got %d attributes, expected %d\n", len(facets.Facets), 4)
 	}
-	//for _, facet := range facets.Facets {
-	//fmt.Printf("%+v\n", facet.Count())
-	//}
 
 	return nil
 }
