@@ -3,7 +3,6 @@ package facet
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"strings"
@@ -38,7 +37,7 @@ func New(params any) (*Facets, error) {
 				return nil, err
 			}
 			defer f.Close()
-			err = facets.DecodeData(f)
+			err = DecodeData(f, &facets.data)
 			if err != nil {
 				return nil, err
 			}
@@ -68,20 +67,6 @@ func (f Facets) Attrs() []string {
 		return attrs
 	}
 	return []string{}
-}
-
-func (f *Facets) DecodeData(r io.Reader) error {
-	dec := json.NewDecoder(r)
-	for {
-		m := make(map[string]any)
-		if err := dec.Decode(&m); err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-		f.data = append(f.data, m)
-	}
-	return nil
 }
 
 func (f Facets) GetFacet(attr string) *Field {

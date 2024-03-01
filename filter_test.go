@@ -11,7 +11,6 @@ const (
 	Page                 = "page"
 	HitsPerPage          = "hitsPerPage"
 	SortFacetsBy         = `sortFacetValuesBy`
-	Query                = `query`
 	ParamFacets          = "facets"
 	ParamFilters         = "filters"
 	FacetFilters         = `facetFilters`
