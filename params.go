@@ -16,6 +16,23 @@ type Params struct {
 	vals         url.Values
 }
 
+func ParseParams(params any) (*Params, error) {
+	p := &Params{}
+
+	var err error
+	switch param := params.(type) {
+	case string:
+		p.vals, err = url.ParseQuery(param)
+		if err != nil {
+			return nil, err
+		}
+	case url.Values:
+		p.vals = param
+	}
+
+	return p, nil
+}
+
 func (f Params) UID() string {
 	if f.vals.Has("uid") {
 		return f.vals.Get("uid")
