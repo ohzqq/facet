@@ -15,6 +15,11 @@ const testDataDir = `testdata/data-dir`
 const numBooks = 7253
 const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`
 
+var queryStrTests = []string{
+	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`,
+	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`,
+}
+
 var defFieldsStr = `tags,authors,narrators,series`
 var defFieldsSingle = []string{"tags,authors,narrators,series"}
 var defFieldsSlice = []string{"tags", "authors", "narrators", "series"}

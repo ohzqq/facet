@@ -3,11 +3,13 @@ package facet
 import (
 	"encoding/json"
 
+	"github.com/RoaringBitmap/roaring"
 	"github.com/spf13/cast"
 )
 
 type Facets struct {
 	Facets []*Field
+	bits   *roaring.Bitmap
 	data   []map[string]any
 	*Params
 }
@@ -22,6 +24,8 @@ func New(params any) (*Facets, error) {
 		return nil, err
 	}
 
+	facets.Facets = NewFields(facets.Attrs())
+
 	facets.data, err = facets.Data()
 	if err != nil {
 		return nil, err
@@ -31,7 +35,9 @@ func New(params any) (*Facets, error) {
 }
 
 func NewFacets() *Facets {
-	return &Facets{}
+	return &Facets{
+		bits: roaring.New(),
+	}
 }
 
 func (f Facets) GetFacet(attr string) *Field {
@@ -48,8 +54,21 @@ func (f Facets) EncodeQuery() string {
 }
 
 func (f *Facets) Calculate() *Facets {
-	facets := CalculateFacets(f.data, f.Attrs(), f.UID())
-	f.Facets = facets
+	uid := f.UID()
+
+	for id, d := range f.data {
+		if i, ok := d[uid]; ok {
+			id = cast.ToInt(i)
+		}
+		for _, facet := range f.Facets {
+			if val, ok := d[facet.Attribute]; ok {
+				facet.Add(
+					val,
+					[]int{id},
+				)
+			}
+		}
+	}
 	return f
 }
 
@@ -61,26 +80,8 @@ func (f *Facets) MarshalJSON() ([]byte, error) {
 	return json.Marshal(facets)
 }
 
-func CalculateFacets(data []map[string]any, fields []string, ident ...string) []*Field {
-	facets := NewFields(fields)
-
-	uid := "id"
-	if len(ident) > 0 {
-		uid = ident[0]
-	}
-
-	for id, d := range data {
-		if i, ok := d[uid]; ok {
-			id = cast.ToInt(i)
-		}
-		for _, facet := range facets {
-			if val, ok := d[facet.Attribute]; ok {
-				facet.Add(
-					val,
-					[]int{id},
-				)
-			}
-		}
-	}
-	return facets
+func (idx Facets) Bitmap() *roaring.Bitmap {
+	bits := roaring.New()
+	bits.AddRange(0, uint64(len(idx.data)))
+	return bits
 }

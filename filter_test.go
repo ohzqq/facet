@@ -1,7 +1,9 @@
 package facet
 
 import (
+	"fmt"
 	"net/url"
+	"testing"
 )
 
 const (
@@ -32,19 +34,30 @@ const (
 	KeywordAnalyzer = "keyword"
 )
 
-var boolFilterStr = []string{
-	`tags:dnr`,
-	`tags:dnr AND tags:abo`,
-	`tags:dnr OR tags:abo`,
-	`NOT tags:dnr AND tags:abo`,
-	`NOT tags:dnr OR tags:abo`,
-	`tags:dnr AND NOT tags:abo`,
-	`tags:dnr OR NOT tags:abo`,
+var filterStrs = []string{
+	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr"]`,
+	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr", "tags:abo"]`,
+	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "tags:abo"]]`,
+	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["-tags:dnr", "tags:abo"]`,
+	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["-tags:dnr", "tags:abo"]]`,
+	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr","-tags:abo"]`,
+	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "-tags:abo"]]`,
 }
 
 type filterStr struct {
 	vals url.Values
 	want int
+}
+
+func TestFilters(t *testing.T) {
+	for _, query := range filterStrs {
+		facets, err := New(query)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Printf("%+v\n", facets.Filters())
+	}
+
 }
 
 func testSearchFilterStrings() []filterStr {
