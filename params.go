@@ -47,6 +47,16 @@ func (f Params) Attrs() []string {
 	return []string{}
 }
 
+func (p *Params) Filters() []any {
+	if p.vals.Has("facetFilters") {
+		fils, err := unmarshalFilter(p.vals.Get("facetFilters"))
+		if err != nil {
+		}
+		return fils
+	}
+	return []any{}
+}
+
 func (p Params) Data() ([]map[string]any, error) {
 	var data []map[string]any
 

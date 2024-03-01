@@ -74,6 +74,22 @@ func NewFilter(field string, filters ...string) []string {
 	return f
 }
 
+// FilteredItems returns the subset of data.
+func FilteredItems(data []map[string]any, ids []any) []map[string]any {
+	if len(ids) == 0 {
+		return data
+	}
+	items := make([]map[string]any, len(ids))
+	for item, _ := range data {
+		for i, id := range ids {
+			if cast.ToInt(id) == item {
+				items[i] = data[item]
+			}
+		}
+	}
+	return items
+}
+
 func unmarshalFilter(dec string) ([]any, error) {
 	var f []any
 	err := json.Unmarshal([]byte(dec), &f)
@@ -90,20 +106,4 @@ func bitsToIntSlice(bitmap *roaring.Bitmap) []int {
 		ids[i] = int(b)
 	}
 	return ids
-}
-
-// FilteredItems returns the subset of data.
-func FilteredItems(data []map[string]any, ids []any) []map[string]any {
-	if len(ids) == 0 {
-		return data
-	}
-	items := make([]map[string]any, len(ids))
-	for item, _ := range data {
-		for i, id := range ids {
-			if cast.ToInt(id) == item {
-				items[i] = data[item]
-			}
-		}
-	}
-	return items
 }

@@ -35,25 +35,8 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 		t.Error(err)
 	}
 
-	//facets.Calculate()
-	//for _, facet := range facets.Facets {
-	//fmt.Printf("%+v\n", facet.Count())
-	//}
-
-	//if len(facets.Data)
-	println(len(facets.data))
-
-	//d, err := json.Marshal(facets)
-	//if err != nil {
-	//t.Error(err)
-	//}
-	//println(string(d))
-
-	authors := facets.GetFacet("authors")
-	res := authors.Search("adam")
-	//fmt.Printf("%s: %+v\n", res.Label, res.Items())
-	for _, r := range res {
-		fmt.Printf("%s: %+v\n", r.Label, r.Items())
+	if len(facets.data) != 7174 {
+		t.Errorf("got %d items, expected %d\n", len(facets.data), 7174)
 	}
 }
 

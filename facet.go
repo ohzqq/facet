@@ -2,7 +2,6 @@ package facet
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/spf13/cast"
 )
@@ -76,9 +75,6 @@ func CalculateFacets(data []map[string]any, fields []string, ident ...string) []
 		}
 		for _, facet := range facets {
 			if val, ok := d[facet.Attribute]; ok {
-				if auth := cast.ToString(val); auth == "mafia" {
-					fmt.Printf("%+v\n", val)
-				}
 				facet.Add(
 					val,
 					[]int{id},
