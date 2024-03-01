@@ -10,6 +10,7 @@ import (
 type Facets struct {
 	Facets []*Field
 	bits   *roaring.Bitmap
+	Hits   []int
 	data   []map[string]any
 	*Params
 }
@@ -31,6 +32,17 @@ func New(params any) (*Facets, error) {
 		return nil, err
 	}
 
+	facets.Calculate()
+
+	if facets.vals.Has("facetFilters") {
+		filters := facets.Filters()
+		facets, err = facets.Filter(filters)
+		if err != nil {
+			return nil, err
+		}
+		facets.Calculate()
+	}
+
 	return facets, nil
 }
 
@@ -38,19 +50,6 @@ func NewFacets() *Facets {
 	return &Facets{
 		bits: roaring.New(),
 	}
-}
-
-func (f Facets) GetFacet(attr string) *Field {
-	for _, facet := range f.Facets {
-		if facet.Attribute == attr {
-			return facet
-		}
-	}
-	return &Field{}
-}
-
-func (f Facets) EncodeQuery() string {
-	return f.vals.Encode()
 }
 
 func (f *Facets) Calculate() *Facets {
@@ -71,6 +70,42 @@ func (f *Facets) Calculate() *Facets {
 		}
 	}
 	return f
+}
+
+func (f *Facets) Filter(filters []any) (*Facets, error) {
+	filtered, err := Filter(f.bits, f.Facets, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	f.Hits = f.FilterBits(filtered)
+
+	return f, nil
+}
+
+func (f *Facets) FilterBits(bits *roaring.Bitmap) []int {
+	bits.And(f.bits)
+	return cast.ToIntSlice(bits.ToArray())
+}
+
+//func (f *Facets) GetByID(ids ...string) []map[string]any {
+//}
+
+func (f Facets) GetFacet(attr string) *Field {
+	for _, facet := range f.Facets {
+		if facet.Attribute == attr {
+			return facet
+		}
+	}
+	return &Field{}
+}
+
+func (f Facets) Count() int {
+	return len(f.Hits)
+}
+
+func (f Facets) EncodeQuery() string {
+	return f.vals.Encode()
 }
 
 func (f *Facets) MarshalJSON() ([]byte, error) {

@@ -2,7 +2,6 @@ package facet
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/RoaringBitmap/roaring"
@@ -145,10 +144,7 @@ func (f *Field) Search(term string) []*Keyword {
 }
 
 func (f *Field) Filter(val string) *roaring.Bitmap {
-	tokens := f.Search(val)
-	fmt.Printf("attr: %v, q: %v, res %+v\n", f.Attr(), val, len(tokens))
-	kv := f.FindByValue(val)
-	fmt.Printf("%+v\n", kv.Count())
+	tokens := f.Find(val)
 	bits := make([]*roaring.Bitmap, len(tokens))
 	for i, token := range tokens {
 		bits[i] = token.Bitmap()

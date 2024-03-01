@@ -33,24 +33,71 @@ const (
 	KeywordAnalyzer = "keyword"
 )
 
-var filterStrs = []string{
-	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr"]`,
-	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr", "tags:abo"]`,
-	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "tags:abo"]]`,
-	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["-tags:dnr", "tags:abo"]`,
-	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["-tags:dnr", "tags:abo"]]`,
-	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr","-tags:abo"]`,
-	`data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "-tags:abo"]]`,
+var filterStrs = []filterStr{
+	filterStr{
+		want:  2237,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr"]`,
+	},
+	filterStr{
+		want:  384,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr", "tags:abo"]`,
+	},
+	filterStr{
+		want:  2270,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "tags:abo"]]`,
+	},
+	filterStr{
+		want:  417,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["-tags:dnr", "tags:abo"]`,
+	},
+	filterStr{
+		want:  417,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["-tags:dnr", "tags:abo"]]`,
+	},
+	filterStr{
+		want:  2237,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr","-tags:abo"]`,
+	},
+	filterStr{
+		want:  2237,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "-tags:abo"]]`,
+	},
 }
 
 type filterStr struct {
+	query string
+	want  int
+}
+
+type filterVal struct {
 	vals url.Values
 	want int
 }
 
-func TestFilters(t *testing.T) {
-	for _, query := range filterStrs {
-		facets, err := New(query)
+func TestFilterStrings(t *testing.T) {
+	for _, f := range filterStrs {
+		facets, err := New(f.query)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if num := facets.Count(); num != f.want {
+			t.Errorf("got %d results, wanted %d\n", num, f.want)
+		}
+	}
+
+}
+
+func TestFilterVals(t *testing.T) {
+	for _, f := range testSearchFilterStrings() {
+		facets, err := New(f.vals)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if num := facets.Count(); num != f.want {
+			t.Errorf("got %d results, wanted %d\n", num, f.want)
+		}
+
+		facets, err = New(f.vals.Encode())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -59,99 +106,121 @@ func TestFilters(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		println(filtered.GetCardinality())
-	}
+		if num := filtered.GetCardinality(); num != uint64(f.want) {
+			t.Errorf("got %d results, wanted %d\n", num, f.want)
+		}
 
+	}
 }
 
-func testSearchFilterStrings() []filterStr {
+func testSearchFilterStrings() []filterVal {
 	//queries := make(map[int]url.Values)
-	var queries []filterStr
+	var queries []filterVal
 
-	queries = append(queries, filterStr{
+	queries = append(queries, filterVal{
 		want: 58,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`["authors:amy lane"]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
-		want: 806,
+	queries = append(queries, filterVal{
+		want: 801,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`["authors:amy lane", ["tags:romance"]]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
-		want: 789,
+	queries = append(queries, filterVal{
+		want: 784,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`["authors:amy lane", ["tags:romance", "tags:-dnr"]]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
+	queries = append(queries, filterVal{
 		want: 384,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`["tags:dnr", "tags:abo"]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
-		want: 1856,
+	queries = append(queries, filterVal{
+		want: 1853,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`["tags:dnr", "tags:-abo"]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
-		want: 1856,
+	queries = append(queries, filterVal{
+		want: 1853,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`["tags:-abo", "tags:dnr"]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
-		want: 2273,
+	queries = append(queries, filterVal{
+		want: 2270,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`[["tags:dnr", "tags:abo"]]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
-		want: 2240,
+	queries = append(queries, filterVal{
+		want: 2237,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`[["tags:dnr", "tags:-abo"]]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
-		want: 2240,
+	queries = append(queries, filterVal{
+		want: 2237,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`[["tags:-abo", "tags:dnr"]]`,
 			},
 		},
 	})
 
-	queries = append(queries, filterStr{
+	queries = append(queries, filterVal{
 		want: 0,
 		vals: url.Values{
+			"data":                  []string{"testdata/ndbooks.json"},
+			"attributesForFaceting": []string{"tags", "authors"},
 			FacetFilters: []string{
 				`["tags:abo", "tags:dnr", "tags:horror"]`,
 			},
