@@ -3,7 +3,6 @@ package facet
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 
 	"github.com/spf13/cast"
 )
@@ -11,7 +10,6 @@ import (
 type Facets struct {
 	Facets []*Field
 	data   []map[string]any
-	Values url.Values
 	*Params
 }
 
@@ -19,18 +17,11 @@ func New(params any) (*Facets, error) {
 	facets := NewFacets()
 
 	var err error
-	//switch p := params.(type) {
-	//case string:
-	//  facets.Values, err = url.ParseQuery(p)
-	//  if err != nil {
-	//    return nil, err
-	//  }
-	//case url.Values:
-	//  facets.Values = p
-	//}
-	//facets.Params.vals = facets.Values
 
 	facets.Params, err = ParseParams(params)
+	if err != nil {
+		return nil, err
+	}
 
 	facets.data, err = facets.Data()
 	if err != nil {
@@ -54,7 +45,7 @@ func (f Facets) GetFacet(attr string) *Field {
 }
 
 func (f Facets) EncodeQuery() string {
-	return f.Values.Encode()
+	return f.vals.Encode()
 }
 
 func (f *Facets) Calculate() *Facets {

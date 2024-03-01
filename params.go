@@ -9,11 +9,7 @@ import (
 )
 
 type Params struct {
-	FacetFilters []string `mapstructure:"facetFilters"`
-	DataSrc      []string `mapstructure:"data"`
-	FacetAttrs   []string `mapstructure:"attributesForFaceting"`
-	Ident        []string `mapstructure:"uid"`
-	vals         url.Values
+	vals url.Values
 }
 
 func ParseParams(params any) (*Params, error) {
