@@ -10,14 +10,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-func Filter(bits *roaring.Bitmap, fields map[string]*Field, filters []any) (*roaring.Bitmap, error) {
+func Filter(bits *roaring.Bitmap, fields []*Field, filters []any) (*roaring.Bitmap, error) {
 	var (
 		and []*roaring.Bitmap
 		or  []*roaring.Bitmap
 		not []*roaring.Bitmap
 	)
 
-	for name, field := range fields {
+	for _, field := range fields {
+		name := field.Attribute
 		for _, fs := range filters {
 			switch vals := fs.(type) {
 			case string:

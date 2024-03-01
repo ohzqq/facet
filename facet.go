@@ -60,6 +60,7 @@ func (f *Facets) Calculate() *Facets {
 		if i, ok := d[uid]; ok {
 			id = cast.ToInt(i)
 		}
+		f.bits.AddInt(id)
 		for _, facet := range f.Facets {
 			if val, ok := d[facet.Attribute]; ok {
 				facet.Add(
@@ -78,10 +79,4 @@ func (f *Facets) MarshalJSON() ([]byte, error) {
 	facets["facets"] = f.Facets
 
 	return json.Marshal(facets)
-}
-
-func (idx Facets) Bitmap() *roaring.Bitmap {
-	bits := roaring.New()
-	bits.AddRange(0, uint64(len(idx.data)))
-	return bits
 }
