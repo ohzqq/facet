@@ -10,15 +10,8 @@ import (
 )
 
 const (
-	Or               = "OR"
-	And              = "AND"
-	Not              = `NOT`
-	AndNot           = `AND NOT`
-	OrNot            = `OR NOT`
-	FacetField       = `facet`
-	SortByCount      = `count`
-	SortByAlpha      = `alpha`
-	StandardAnalyzer = `standard`
+	SortByCount = `count`
+	SortByAlpha = `alpha`
 )
 
 type Field struct {
