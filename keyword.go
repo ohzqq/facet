@@ -8,10 +8,6 @@ import (
 	"github.com/spf13/cast"
 )
 
-type Analyzer interface {
-	Tokenize(any) []*Keyword
-}
-
 type Keyword struct {
 	Value    string `json:"value"`
 	Label    string `json:"label"`

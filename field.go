@@ -28,7 +28,6 @@ type Field struct {
 	Order     string
 	keywords  []*Keyword
 	kwIdx     map[string]int
-	analyzer  Analyzer
 }
 
 func NewField(attr string) *Field {
