@@ -60,6 +60,14 @@ func (f *Field) Keywords() []*Keyword {
 	return f.SortTokens()
 }
 
+func (f *Field) GetValues() []string {
+	vals := make([]string, len(f.keywords))
+	for i, token := range f.keywords {
+		vals[i] = token.Value
+	}
+	return vals
+}
+
 func (f *Field) FindByLabel(label string) *Keyword {
 	for _, token := range f.keywords {
 		if token.Label == label {
@@ -144,14 +152,6 @@ func (f *Field) Fuzzy(term string) *roaring.Bitmap {
 		bits[i] = b
 	}
 	return roaring.ParOr(viper.GetInt("workers"), bits...)
-}
-
-func (f *Field) GetValues() []string {
-	vals := make([]string, len(f.keywords))
-	for i, token := range f.keywords {
-		vals[i] = token.Value
-	}
-	return vals
 }
 
 // Len returns the number of items, to satisfy the fuzzy.Source interface.
