@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/spf13/cast"
 )
 
 type Facets struct {
@@ -76,28 +75,13 @@ func (f *Facets) Filter(filters []any) (*Facets, error) {
 	facets := NewFacets(f.Attrs())
 	facets.Params = f.Params
 
-	facets.hits = f.FilterBits(filtered)
+	f.bits.And(filtered)
 
-	if len(facets.hits) > 0 {
-		facets.Hits = f.GetByID(facets.hits...)
+	if f.bits.GetCardinality() > 0 {
+		facets.Hits = ItemsByBitmap(f.Hits, f.bits)
 	}
 
 	return facets, nil
-}
-
-func (f *Facets) FilterBits(bits *roaring.Bitmap) []int {
-	//bits.And(f.bits)
-	f.bits.And(bits)
-	return cast.ToIntSlice(bits.ToArray())
-}
-
-func (f *Facets) GetByID(ids ...int) []map[string]any {
-	var res []map[string]any
-	f.bits.Iterate(func(x uint32) bool {
-		res = append(res, f.Hits[int(x)])
-		return true
-	})
-	return res
 }
 
 func (f Facets) GetFacet(attr string) *Field {
@@ -109,12 +93,8 @@ func (f Facets) GetFacet(attr string) *Field {
 	return &Field{}
 }
 
-func (f Facets) Count() int {
-	return len(f.hits)
-}
-
 func (f Facets) Len() int {
-	return len(f.hits)
+	return int(f.bits.GetCardinality())
 }
 
 func (f Facets) EncodeQuery() string {
@@ -133,4 +113,13 @@ func (f *Facets) MarshalJSON() ([]byte, error) {
 	enc["hits"] = f.Hits
 
 	return json.Marshal(enc)
+}
+
+func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any {
+	var res []map[string]any
+	bits.Iterate(func(x uint32) bool {
+		res = append(res, data[int(x)])
+		return true
+	})
+	return res
 }

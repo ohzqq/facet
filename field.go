@@ -108,15 +108,6 @@ func (f *Field) Tokenize(val any) []*Keyword {
 	return KeywordTokenizer(val)
 }
 
-func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any {
-	var res []map[string]any
-	bits.Iterate(func(x uint32) bool {
-		res = append(res, data[int(x)])
-		return true
-	})
-	return res
-}
-
 func (f *Field) Search(term string) []*Keyword {
 	matches := fuzzy.FindFrom(term, f)
 	tokens := make([]*Keyword, len(matches))
