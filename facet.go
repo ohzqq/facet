@@ -1,167 +1,128 @@
 package facet
 
 import (
+	"encoding/json"
+	"log"
+
 	"github.com/RoaringBitmap/roaring"
-	"github.com/sahilm/fuzzy"
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 )
 
-// Facet is a structure for facet data.
-type Facet struct {
-	Attribute string       `json:"attribute"`
-	Items     []*FacetItem `json:"items,omitempty"`
-	Operator  string       `json:"operator,omitempty"`
-	Sep       string       `json:"-"`
+type Facets struct {
+	*Params `json:"params"`
+	Facets  []*Field         `json:"facets"`
+	Hits    []map[string]any `json:"hits"`
+	bits    *roaring.Bitmap
 }
 
-// NewFacet initializes a facet with attribute.
-func NewFacet(name string) *Facet {
-	return &Facet{
-		Attribute: name,
-		Operator:  "or",
-		Sep:       ".",
+func New(params any) (*Facets, error) {
+	var err error
+
+	p, err := ParseParams(params)
+	if err != nil {
+		return nil, err
 	}
-}
 
-// GetItem returns an *FacetItem.
-func (f *Facet) GetItem(term string) *FacetItem {
-	for _, item := range f.Items {
-		if term == item.Value {
-			return item
+	facets := NewFacets(p.Attrs())
+	facets.Params = p
+
+	facets.Hits, err = facets.Data()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	facets.Calculate()
+
+	if facets.vals.Has("facetFilters") {
+		filtered, err := facets.Filter(facets.Filters())
+		if err != nil {
+			return nil, err
 		}
+		return filtered.Calculate(), nil
 	}
-	return f.AddItem(term)
+
+	return facets, nil
 }
 
-// GetConfig returns a map of a Facet's config.
-func (f *Facet) GetConfig() map[string]any {
-	return map[string]any{
-		"attribute": f.Attribute,
-		"operator":  f.Operator,
+func NewFacets(fields []string) *Facets {
+	return &Facets{
+		bits:   roaring.New(),
+		Facets: NewFields(fields),
 	}
 }
 
-// ListItems returns a string slice of all item values.
-func (f *Facet) ListItems() []string {
-	var items []string
-	for _, item := range f.Items {
-		items = append(items, item.Value)
-	}
-	return items
-}
-
-// AddItem adds an item with optional ids. If the item already exists ids are
-// appended.
-func (f *Facet) AddItem(term string, ids ...string) *FacetItem {
-	for _, i := range f.Items {
-		if term == i.Value {
-			i.BelongsTo(ids...)
-			return i
-		}
-	}
-	item := NewFacetItem(term, ids)
-	f.Items = append(f.Items, item)
-	return item
-}
-
-// CollectItems takes the input data and aggregates them based on the
-// Facet.Attribute.
-func (f *Facet) CollectItems(data []map[string]any) *Facet {
-	for i, item := range data {
-		if terms, ok := item[f.Attribute]; ok {
-			var items []string
-			switch t := terms.(type) {
-			case string:
-				items = append(items, t)
-			case []string:
-				items = t
-			case []any:
-				items = cast.ToStringSlice(t)
-			}
-			for _, term := range items {
-				f.AddItem(term, cast.ToString(i))
+func (f *Facets) Calculate() *Facets {
+	for id, d := range f.Hits {
+		f.bits.AddInt(id)
+		for _, facet := range f.Facets {
+			if val, ok := d[facet.Attribute]; ok {
+				facet.Add(
+					val,
+					[]int{id},
+				)
 			}
 		}
 	}
 	return f
 }
 
-// FuzzyFindItem fuzzy finds an item's value and returns possible matches.
-func (f *Facet) FuzzyFindItem(term string) []*FacetItem {
-	matches := f.FuzzyMatches(term)
-	items := make([]*FacetItem, len(matches))
-	for i, match := range matches {
-		item := f.Items[match.Index]
-		item.Match = match
-		items[i] = item
+func (f *Facets) Filter(filters []any) (*Facets, error) {
+	filtered, err := Filter(f.bits, f.Facets, filters)
+	if err != nil {
+		return nil, err
 	}
-	return items
+
+	facets := NewFacets(f.Attrs())
+	facets.Params = f.Params
+
+	f.bits.And(filtered)
+
+	if f.bits.GetCardinality() > 0 {
+		facets.Hits = ItemsByBitmap(f.Hits, f.bits)
+	}
+
+	return facets, nil
 }
 
-// FuzzyMatches returns the fuzzy.Matches of the search.
-func (f *Facet) FuzzyMatches(term string) fuzzy.Matches {
-	return fuzzy.FindFrom(term, f)
-}
-
-// String returns an Item.Value, to satisfy the fuzzy.Source interface.
-func (f *Facet) String(i int) string {
-	return f.Items[i].Value
-}
-
-// Len returns the number of items, to satisfy the fuzzy.Source interface.
-func (f *Facet) Len() int {
-	return len(f.Items)
-}
-
-// Filter applies the listed filters to the facet.
-func (f *Facet) Filter(filters ...string) *roaring.Bitmap {
-	var bits []*roaring.Bitmap
-	for _, filter := range filters {
-		term := f.FuzzyFindItem(filter)
-		if len(term) < 1 {
+func (f Facets) GetFacet(attr string) *Field {
+	for _, facet := range f.Facets {
+		if facet.Attribute == attr {
+			return facet
 		}
-		bits = append(bits, term[0].Bitmap())
 	}
-
-	switch f.Operator {
-	case "and":
-		return roaring.ParAnd(viper.GetInt("workers"), bits...)
-	default:
-		return roaring.ParOr(viper.GetInt("workers"), bits...)
-	}
+	return &Field{}
 }
 
-// FacetItem is a data structure for a Facet's item.
-type FacetItem struct {
-	Value       string `json:"value"`
-	Label       string `json:"label"`
-	Count       int    `json:"count"`
-	belongsTo   []uint32
-	fuzzy.Match `json:"-"`
+func (f Facets) Len() int {
+	return int(f.bits.GetCardinality())
 }
 
-// NewFacetItem initializes an item with a value and string slice of related data
-// items.
-func NewFacetItem(name string, vals []string) *FacetItem {
-	term := &FacetItem{
-		Value: name,
-		Label: name,
+func (f Facets) EncodeQuery() string {
+	return f.vals.Encode()
+}
+
+func (f *Facets) Bitmap() *roaring.Bitmap {
+	return f.bits
+}
+
+func (f *Facets) MarshalJSON() ([]byte, error) {
+	facets := make(map[string]*Field)
+	for _, facet := range f.Facets {
+		facets[facet.Attribute] = facet
 	}
-	term.BelongsTo(vals...)
-	return term
+
+	enc := make(map[string]any)
+	enc["params"] = f.EncodeQuery()
+	enc["facets"] = facets
+	enc["hits"] = f.Hits
+
+	return json.Marshal(enc)
 }
 
-// BelongsTo adds slice of index values for data items.
-func (t *FacetItem) BelongsTo(vals ...string) *FacetItem {
-	for _, val := range vals {
-		t.belongsTo = append(t.belongsTo, cast.ToUint32(val))
-	}
-	t.Count = len(t.belongsTo)
-	return t
-}
-
-// Bitmap returns a *roaring.Bitmap of slice indices for a FacetItem.
-func (t *FacetItem) Bitmap() *roaring.Bitmap {
-	return roaring.BitmapOf(t.belongsTo...)
+func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any {
+	var res []map[string]any
+	bits.Iterate(func(x uint32) bool {
+		res = append(res, data[int(x)])
+		return true
+	})
+	return res
 }

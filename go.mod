@@ -5,6 +5,8 @@ go 1.21.4
 require (
 	github.com/Masterminds/squirrel v1.5.4 // indirect
 	github.com/RoaringBitmap/roaring v1.7.0 // indirect
+	github.com/alecthomas/participle v0.7.1 // indirect
+	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/bits-and-blooms/bitset v1.12.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -18,6 +20,7 @@ require (
 	github.com/kelindar/smutex v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
+	github.com/kljensen/snowball v0.9.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

@@ -1,95 +1,120 @@
 package facet
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"testing"
 
-	"github.com/RoaringBitmap/roaring"
+	"github.com/spf13/cast"
 )
 
-func TestRoaringTerms(t *testing.T) {
-	f := idx.GetFacet("tags")
-	term := f.GetItem("abo")
-	r := term.Bitmap()
-	if len(r.ToArray()) != 416 {
-		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 416)
-	}
+const testDataFile = `testdata/data-dir/audiobooks.json`
+const testDataDir = `testdata/data-dir`
+const numBooks = 7253
+const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`
+
+var queryStrTests = []string{
+	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`,
+	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`,
 }
 
-func TestItemsList(t *testing.T) {
-	f := idx.GetFacet("tags")
-	if f.Len() != len(f.Items) {
-		t.Errorf("got %d, expected %d\n", f.Len(), len(f.Items))
-	}
+var defFieldsStr = `tags,authors,narrators,series`
+var defFieldsSingle = []string{"tags,authors,narrators,series"}
+var defFieldsSlice = []string{"tags", "authors", "narrators", "series"}
+
+var testQueryVals = url.Values{
+	"attributesForFaceting": defFieldsSingle,
+	"data":                  []string{"testdata/ndbooks.json"},
 }
 
-func TestFuzzyFindItem(t *testing.T) {
-	f := idx.GetFacet("tags")
-	m := f.FuzzyFindItem("holiday")
-	if len(m) != 5 {
-		t.Errorf("got %d, expected 5", len(m))
-	}
-	//for _, i := range m {
-	//fmt.Printf("%#v\n", i.Match)
-	//}
+var facetCount = map[string]int{
+	"tags":      217,
+	"authors":   1602,
+	"series":    1722,
+	"narrators": 1412,
 }
 
-func TestRoaringFilter(t *testing.T) {
-	abo := getRoaringAbo(t)
-	dnr := getRoaringDnr(t)
-
-	or := roaring.ParOr(4, abo, dnr)
-	orC := len(or.ToArray())
-	if orC != 2269 {
-		t.Errorf("got %d, expected %d\n", orC, 2269)
+func TestNewFacetsFromQueryString(t *testing.T) {
+	facets, err := New(testQueryString)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	and := roaring.ParAnd(4, abo, dnr)
-	andC := len(and.ToArray())
-	if andC != 384 {
-		t.Errorf("got %d, expected %d\n", andC, 384)
-	}
-}
-
-func TestRoaringFilters(t *testing.T) {
-	vals := make(url.Values)
-	vals.Add("tags", "abo")
-	vals.Add("tags", "dnr")
-	vals.Add("authors", "Alice Winters")
-	vals.Add("authors", "Amy Lane")
-	q, err := ParseFilters(vals)
+	err = testFacetCfg(facets)
 	if err != nil {
 		t.Error(err)
 	}
-	testFilters(q)
-}
 
-func testFilters(q url.Values) {
-	items := idx.Filter(q)
-	fmt.Printf("%+v\n", len(items.Data))
-
-	//for _, item := range items.Data {
-	//  fmt.Printf("%+v\n", item)
+	if len(facets.Hits) != 7174 {
+		t.Errorf("got %d items, expected %d\n", len(facets.Hits), 7174)
+	}
+	//if len(facets.Hits) > 0 {
+	//  fmt.Printf("%+v\n", facets.Hits[0]["title"])
 	//}
 }
 
-func getRoaringAbo(t *testing.T) *roaring.Bitmap {
-	f := idx.GetFacet("tags")
-	term := f.GetItem("abo")
-	r := term.Bitmap()
-	if len(r.ToArray()) != 416 {
-		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 416)
+func TestNewFacetsFromQuery(t *testing.T) {
+	facets, err := New(testQueryVals)
+	if err != nil {
+		t.Fatal(err)
 	}
-	return r
+
+	err = testFacetCfg(facets)
+	if err != nil {
+		t.Error(err)
+	}
+
+	for _, facet := range facets.Facets {
+		if num, ok := facetCount[facet.Attribute]; ok {
+			if num != facet.Len() {
+				t.Errorf("%v got %d, expected %d \n", facet.Attribute, facet.Len(), num)
+			}
+		} else {
+			t.Errorf("attr %s not found\n", facet.Attribute)
+		}
+	}
 }
 
-func getRoaringDnr(t *testing.T) *roaring.Bitmap {
-	f := idx.GetFacet("tags")
-	term := f.GetItem("dnr")
-	r := term.Bitmap()
-	if len(r.ToArray()) != 2237 {
-		t.Errorf("got %d, expected %d\n", len(r.ToArray()), 2237)
+func testFacetCfg(facets *Facets) error {
+	if attrs := facets.Attrs(); len(attrs) != 4 {
+		return fmt.Errorf("got %d attributes, expected %d\n", len(attrs), 4)
 	}
-	return r
+
+	facets.Calculate()
+	if len(facets.Facets) != 4 {
+		return fmt.Errorf("got %d attributes, expected %d\n", len(facets.Facets), 4)
+	}
+
+	return nil
+}
+
+func dataToMap() (map[string]map[string]any, error) {
+	data, err := loadData()
+	if err != nil {
+		return nil, err
+	}
+
+	d := make(map[string]map[string]any)
+	for _, i := range data {
+		id := cast.ToString(i["id"])
+		d[id] = i
+	}
+	return d, nil
+}
+
+func loadData() ([]map[string]any, error) {
+	d, err := os.ReadFile(testDataFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var books []map[string]any
+	err = json.Unmarshal(d, &books)
+	if err != nil {
+		return nil, err
+	}
+
+	return books, nil
 }

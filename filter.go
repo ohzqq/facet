@@ -1,7 +1,8 @@
 package facet
 
 import (
-	"net/url"
+	"encoding/json"
+	"strings"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/samber/lo"
@@ -9,34 +10,76 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Filter takes an *Index, filters the data and calculates the facets. It
-// returns a new *Index.
-func Filter(idx *Index) *Index {
-	var bits []*roaring.Bitmap
-	for name, filters := range idx.Filters {
-		for _, facet := range idx.Facets {
-			if facet.Attribute == name {
-				bits = append(bits, facet.Filter(filters...))
+func Filter(bits *roaring.Bitmap, fields []*Field, filters []any) (*roaring.Bitmap, error) {
+	var (
+		and []*roaring.Bitmap
+		or  []*roaring.Bitmap
+		not []*roaring.Bitmap
+	)
+
+	for _, field := range fields {
+		name := field.Attribute
+		for _, fs := range filters {
+			switch vals := fs.(type) {
+			case string:
+				vals, ok := strings.CutPrefix(vals, name+":")
+				if ok {
+					vals, n := strings.CutPrefix(vals, "-")
+					f := field.Filter(vals)
+					if n {
+						not = append(not, f)
+					} else {
+						and = append(and, f)
+					}
+				}
+			case []any:
+				os := cast.ToStringSlice(vals)
+				for _, o := range os {
+					o, ok := strings.CutPrefix(o, name+":")
+					if ok {
+						o, n := strings.CutPrefix(o, "-")
+						f := field.Filter(o)
+						if n {
+							not = append(not, f)
+						} else {
+							or = append(or, f)
+						}
+					}
+				}
 			}
 		}
 	}
 
-	filtered := roaring.ParOr(viper.GetInt("workers"), bits...)
-	ids := filtered.ToArray()
-
-	res, err := New(
-		idx.GetConfig(),
-		FilteredItems(idx.Data, lo.ToAnySlice(ids)),
-	)
-	res.Filters = idx.Filters
-	if err != nil {
-		return res
+	for _, n := range not {
+		bits.AndNot(n)
 	}
-	return res
+
+	arb := roaring.ParAnd(viper.GetInt("workers"), and...)
+	bits.And(arb)
+
+	orb := roaring.ParOr(viper.GetInt("workers"), or...)
+	bits.Or(orb)
+
+	return bits, nil
+}
+
+func NewAnyFilter(field string, filters []string) []any {
+	return lo.ToAnySlice(NewFilter(field, filters...))
+}
+
+func NewFilter(field string, filters ...string) []string {
+	f := make([]string, len(filters))
+	for i, filter := range filters {
+		f[i] = field + ":" + filter
+	}
+	return f
 }
 
 // FilteredItems returns the subset of data.
 func FilteredItems(data []map[string]any, ids []any) []map[string]any {
+	if len(ids) == 0 {
+		return data
+	}
 	items := make([]map[string]any, len(ids))
 	for item, _ := range data {
 		for i, id := range ids {
@@ -48,40 +91,20 @@ func FilteredItems(data []map[string]any, ids []any) []map[string]any {
 	return items
 }
 
-// FilterString parses an encoded filter string.
-func FilterString(val string) (url.Values, error) {
-	q, err := url.ParseQuery(val)
+func unmarshalFilter(dec string) ([]any, error) {
+	var f []any
+	err := json.Unmarshal([]byte(dec), &f)
 	if err != nil {
 		return nil, err
 	}
-	return q, nil
+	return f, nil
 }
 
-// FilterBytes parses a byte slice to url.Values.
-func FilterBytes(val []byte) (url.Values, error) {
-	filters, err := cast.ToStringMapStringSliceE(string(val))
-	if err != nil {
-		return nil, err
+func bitsToIntSlice(bitmap *roaring.Bitmap) []int {
+	bits := bitmap.ToArray()
+	ids := make([]int, len(bits))
+	for i, b := range bits {
+		ids[i] = int(b)
 	}
-	return filters, nil
-}
-
-// ParseFilters takes an interface{} and returns a url.Values.
-func ParseFilters(f any) (url.Values, error) {
-	filters := make(map[string][]string)
-	var err error
-	switch val := f.(type) {
-	case url.Values:
-		return val, nil
-	case []byte:
-		return FilterBytes(val)
-	case string:
-		return FilterString(val)
-	default:
-		filters, err = cast.ToStringMapStringSliceE(val)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return url.Values(filters), nil
+	return ids
 }
