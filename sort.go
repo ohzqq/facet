@@ -5,20 +5,20 @@ import (
 	"strings"
 )
 
-func (t *Field) SortTokens() []*Keyword {
-	tokens := t.keywords
+func (f *Field) SortTokens() []*Keyword {
+	tokens := f.keywords
 
-	switch t.SortBy {
+	switch f.SortBy {
 	case SortByAlpha:
-		if t.Order == "" {
-			t.Order = "asc"
+		if f.Order == "" {
+			f.Order = "asc"
 		}
 		SortTokensByAlpha(tokens)
 	default:
 		SortTokensByCount(tokens)
 	}
 
-	if t.Order == "desc" {
+	if f.Order == "desc" {
 		slices.Reverse(tokens)
 	}
 

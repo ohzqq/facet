@@ -29,11 +29,11 @@ func ParseParams(params any) (*Params, error) {
 	return p, nil
 }
 
-func (f Params) Attrs() []string {
-	if f.vals.Has("attributesForFaceting") {
-		attrs := f.vals["attributesForFaceting"]
+func (p Params) Attrs() []string {
+	if p.vals.Has("attributesForFaceting") {
+		attrs := p.vals["attributesForFaceting"]
 		if len(attrs) == 1 {
-			return strings.Split(f.vals.Get("attributesForFaceting"), ",")
+			return strings.Split(p.vals.Get("attributesForFaceting"), ",")
 		}
 		return attrs
 	}
