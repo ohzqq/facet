@@ -108,23 +108,6 @@ func (f *Field) Tokenize(val any) []*Keyword {
 	return KeywordTokenizer(val)
 }
 
-func GetFieldItems(data []map[string]any, field *Field) []map[string]any {
-	field.SortBy = SortByAlpha
-	tokens := field.SortTokens()
-
-	items := make([]map[string]any, len(tokens))
-	for i, token := range tokens {
-		items[i] = map[string]any{
-			"attribute": field.Attribute,
-			"value":     token.Value,
-			"label":     token.Label,
-			"count":     token.Len(),
-			"hits":      ItemsByBitmap(data, token.Bitmap()),
-		}
-	}
-	return items
-}
-
 func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any {
 	var res []map[string]any
 	bits.Iterate(func(x uint32) bool {

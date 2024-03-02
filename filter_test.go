@@ -1,7 +1,6 @@
 package facet
 
 import (
-	"encoding/json"
 	"net/url"
 	"testing"
 )
@@ -81,7 +80,7 @@ func TestFilterStrings(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if num := facets.Count(); num != f.want {
+		if num := facets.Len(); num != f.want {
 			t.Errorf("got %d results, wanted %d\n", num, f.want)
 		}
 	}
@@ -94,12 +93,13 @@ func TestFilterVals(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if num := facets.Count(); num != f.want {
+		if num := facets.Len(); num != f.want {
 			t.Errorf("got %d results, wanted %d\n", num, f.want)
 		}
 		//if len(facets.Hits) > 0 {
 		//  fmt.Printf("%v: %+v\n", f.vals.Encode(), facets.Hits[0]["title"])
 		//}
+		//println(facets.Len())
 
 		facets, err = New(f.vals.Encode())
 		if err != nil {
@@ -114,11 +114,11 @@ func TestFilterVals(t *testing.T) {
 			t.Errorf("got %d results, wanted %d\n", num, f.want)
 		}
 
-		enc, err := json.Marshal(facets)
-		if err != nil {
-			t.Error(err)
-		}
-		println(string(enc))
+		//enc, err := json.Marshal(facets)
+		//if err != nil {
+		//t.Error(err)
+		//}
+		//println(string(enc))
 	}
 }
 

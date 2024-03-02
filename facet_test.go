@@ -68,8 +68,8 @@ func TestNewFacetsFromQuery(t *testing.T) {
 
 	for _, facet := range facets.Facets {
 		if num, ok := facetCount[facet.Attribute]; ok {
-			if num != facet.Count() {
-				t.Errorf("%v got %d, expected %d \n", facet.Attribute, facet.Count(), num)
+			if num != facet.Len() {
+				t.Errorf("%v got %d, expected %d \n", facet.Attribute, facet.Len(), num)
 			}
 		} else {
 			t.Errorf("attr %s not found\n", facet.Attribute)

@@ -86,17 +86,17 @@ func (f *Facets) Filter(filters []any) (*Facets, error) {
 }
 
 func (f *Facets) FilterBits(bits *roaring.Bitmap) []int {
-	bits.And(f.bits)
+	//bits.And(f.bits)
+	f.bits.And(bits)
 	return cast.ToIntSlice(bits.ToArray())
 }
 
 func (f *Facets) GetByID(ids ...int) []map[string]any {
 	var res []map[string]any
-	for id, d := range f.Hits {
-		if f.bits.ContainsInt(id) {
-			res = append(res, d)
-		}
-	}
+	f.bits.Iterate(func(x uint32) bool {
+		res = append(res, f.Hits[int(x)])
+		return true
+	})
 	return res
 }
 
@@ -110,6 +110,10 @@ func (f Facets) GetFacet(attr string) *Field {
 }
 
 func (f Facets) Count() int {
+	return len(f.hits)
+}
+
+func (f Facets) Len() int {
 	return len(f.hits)
 }
 
