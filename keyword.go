@@ -23,13 +23,13 @@ func NewKeyword(label string) *Keyword {
 	}
 }
 
-func (f *Keyword) Bitmap() *roaring.Bitmap {
-	return f.bits
+func (kw *Keyword) Bitmap() *roaring.Bitmap {
+	return kw.bits
 }
 
-func (f *Keyword) SetValue(txt string) *Keyword {
-	f.Value = txt
-	return f
+func (kw *Keyword) SetValue(txt string) *Keyword {
+	kw.Value = txt
+	return kw
 }
 
 func (kw *Keyword) Items() []int {
@@ -37,31 +37,31 @@ func (kw *Keyword) Items() []int {
 	return cast.ToIntSlice(i)
 }
 
-func (f *Keyword) Count() int {
-	return int(f.bits.GetCardinality())
+func (kw *Keyword) Count() int {
+	return int(kw.bits.GetCardinality())
 }
 
-func (f *Keyword) Len() int {
-	return int(f.bits.GetCardinality())
+func (kw *Keyword) Len() int {
+	return int(kw.bits.GetCardinality())
 }
 
-func (f *Keyword) Contains(id int) bool {
-	return f.bits.ContainsInt(id)
+func (kw *Keyword) Contains(id int) bool {
+	return kw.bits.ContainsInt(id)
 }
 
-func (f *Keyword) Add(ids ...int) {
+func (kw *Keyword) Add(ids ...int) {
 	for _, id := range ids {
-		if !f.Contains(id) {
-			f.bits.AddInt(id)
+		if !kw.Contains(id) {
+			kw.bits.AddInt(id)
 		}
 	}
 }
 
-func (f *Keyword) MarshalJSON() ([]byte, error) {
+func (kw *Keyword) MarshalJSON() ([]byte, error) {
 	item := map[string]any{
-		"count": f.Len(),
-		"value": f.Label,
-		"items": f.Items(),
+		"count": kw.Len(),
+		"value": kw.Label,
+		"items": kw.Items(),
 	}
 	return json.Marshal(item)
 }

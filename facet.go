@@ -100,6 +100,10 @@ func (f Facets) EncodeQuery() string {
 	return f.vals.Encode()
 }
 
+func (f *Facets) Bitmap() *roaring.Bitmap {
+	return f.bits
+}
+
 func (f *Facets) MarshalJSON() ([]byte, error) {
 	facets := make(map[string]*Field)
 	for _, facet := range f.Facets {
