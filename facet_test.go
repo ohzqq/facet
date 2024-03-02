@@ -47,9 +47,12 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(facets.data) != 7174 {
-		t.Errorf("got %d items, expected %d\n", len(facets.data), 7174)
+	if len(facets.Hits) != 7174 {
+		t.Errorf("got %d items, expected %d\n", len(facets.Hits), 7174)
 	}
+	//if len(facets.Hits) > 0 {
+	//  fmt.Printf("%+v\n", facets.Hits[0]["title"])
+	//}
 }
 
 func TestNewFacetsFromQuery(t *testing.T) {

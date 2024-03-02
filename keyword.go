@@ -60,7 +60,7 @@ func (f *Keyword) Add(ids ...int) {
 func (f *Keyword) MarshalJSON() ([]byte, error) {
 	item := map[string]any{
 		"count": f.Count(),
-		"label": f.Label,
+		"value": f.Label,
 		"items": f.Items(),
 	}
 	return json.Marshal(item)

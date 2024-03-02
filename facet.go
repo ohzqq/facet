@@ -9,15 +9,14 @@ import (
 )
 
 type Facets struct {
-	Facets []*Field
-	bits   *roaring.Bitmap
-	Hits   []int
-	data   []map[string]any
-	*Params
+	*Params `json:"params"`
+	Facets  []*Field         `json:"facets"`
+	Hits    []map[string]any `json:"hits"`
+	bits    *roaring.Bitmap
+	hits    []int
 }
 
 func New(params any) (*Facets, error) {
-
 	var err error
 
 	p, err := ParseParams(params)
@@ -28,7 +27,7 @@ func New(params any) (*Facets, error) {
 	facets := NewFacets(p.Attrs())
 	facets.Params = p
 
-	facets.data, err = facets.Data()
+	facets.Hits, err = facets.Data()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,12 +53,7 @@ func NewFacets(fields []string) *Facets {
 }
 
 func (f *Facets) Calculate() *Facets {
-	uid := f.UID()
-
-	for id, d := range f.data {
-		if i, ok := d[uid]; ok {
-			id = cast.ToInt(i)
-		}
+	for id, d := range f.Hits {
 		f.bits.AddInt(id)
 		for _, facet := range f.Facets {
 			if val, ok := d[facet.Attribute]; ok {
@@ -82,10 +76,10 @@ func (f *Facets) Filter(filters []any) (*Facets, error) {
 	facets := NewFacets(f.Attrs())
 	facets.Params = f.Params
 
-	facets.Hits = f.FilterBits(filtered)
+	facets.hits = f.FilterBits(filtered)
 
-	if len(facets.Hits) > 0 {
-		facets.data = f.GetByID(facets.Hits...)
+	if len(facets.hits) > 0 {
+		facets.Hits = f.GetByID(facets.hits...)
 	}
 
 	return facets, nil
@@ -97,12 +91,8 @@ func (f *Facets) FilterBits(bits *roaring.Bitmap) []int {
 }
 
 func (f *Facets) GetByID(ids ...int) []map[string]any {
-	uid := f.UID()
 	var res []map[string]any
-	for id, d := range f.data {
-		if i, ok := d[uid]; ok {
-			id = cast.ToInt(i)
-		}
+	for id, d := range f.Hits {
 		if f.bits.ContainsInt(id) {
 			res = append(res, d)
 		}
@@ -120,7 +110,7 @@ func (f Facets) GetFacet(attr string) *Field {
 }
 
 func (f Facets) Count() int {
-	return len(f.Hits)
+	return len(f.hits)
 }
 
 func (f Facets) EncodeQuery() string {
@@ -128,9 +118,15 @@ func (f Facets) EncodeQuery() string {
 }
 
 func (f *Facets) MarshalJSON() ([]byte, error) {
-	facets := make(map[string]any)
-	facets["params"] = f.EncodeQuery()
-	facets["facets"] = f.Facets
+	facets := make(map[string]*Field)
+	for _, facet := range f.Facets {
+		facets[facet.Attribute] = facet
+	}
 
-	return json.Marshal(facets)
+	enc := make(map[string]any)
+	enc["params"] = f.EncodeQuery()
+	enc["facets"] = facets
+	enc["hits"] = f.Hits
+
+	return json.Marshal(enc)
 }

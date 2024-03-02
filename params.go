@@ -29,13 +29,6 @@ func ParseParams(params any) (*Params, error) {
 	return p, nil
 }
 
-func (f Params) UID() string {
-	if f.vals.Has("uid") {
-		return f.vals.Get("uid")
-	}
-	return "id"
-}
-
 func (f Params) Attrs() []string {
 	if f.vals.Has("attributesForFaceting") {
 		attrs := f.vals["attributesForFaceting"]
@@ -76,6 +69,11 @@ func (p Params) Data() ([]map[string]any, error) {
 	}
 
 	return data, nil
+}
+
+func (p Params) MarshalJSON() ([]byte, error) {
+	params := p.vals.Encode()
+	return json.Marshal(params)
 }
 
 func DecodeData(r io.Reader, data *[]map[string]any) error {
