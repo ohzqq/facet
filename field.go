@@ -33,8 +33,9 @@ type Field struct {
 
 func NewField(attr string) *Field {
 	f := &Field{
-		Sep:      "/",
-		analyzer: keyword{},
+		Sep:    "/",
+		SortBy: "count",
+		Order:  "desc",
 	}
 	parseAttr(f, attr)
 	return f
@@ -49,11 +50,10 @@ func NewFields(attrs []string) []*Field {
 }
 
 func (f *Field) MarshalJSON() ([]byte, error) {
-	d, err := json.Marshal(f.Keywords())
-	if err != nil {
-		return nil, err
-	}
-	return d, err
+	field := make(map[string]any)
+	field["facetItems"] = f.Keywords()
+	field["attribute"] = joinAttr(f)
+	return json.Marshal(field)
 }
 
 func (f *Field) Keywords() []*Keyword {
@@ -81,7 +81,7 @@ func (f *Field) FindByValue(val string) *Keyword {
 func (f *Field) FindByIndex(ti ...int) []*Keyword {
 	var tokens []*Keyword
 	for _, tok := range ti {
-		if tok < f.Count() {
+		if tok < f.Len() {
 			tokens = append(tokens, f.keywords[tok])
 		}
 	}
@@ -105,7 +105,7 @@ func (f *Field) Add(val any, ids []int) {
 }
 
 func (f *Field) Tokenize(val any) []*Keyword {
-	return f.analyzer.Tokenize(val)
+	return KeywordTokenizer(val)
 }
 
 func GetFieldItems(data []map[string]any, field *Field) []map[string]any {
@@ -118,7 +118,7 @@ func GetFieldItems(data []map[string]any, field *Field) []map[string]any {
 			"attribute": field.Attribute,
 			"value":     token.Value,
 			"label":     token.Label,
-			"count":     token.Count(),
+			"count":     token.Len(),
 			"hits":      ItemsByBitmap(data, token.Bitmap()),
 		}
 	}
@@ -182,7 +182,7 @@ func (f *Field) GetValues() []string {
 
 // Len returns the number of items, to satisfy the fuzzy.Source interface.
 func (f *Field) Len() int {
-	return f.Count()
+	return len(f.keywords)
 }
 
 // String returns an Item.Value, to satisfy the fuzzy.Source interface.
@@ -194,15 +194,15 @@ func (f *Field) Count() int {
 	return len(f.keywords)
 }
 
-func (f *Field) Attr() string {
-	attr := f.Attribute
-	if f.SortBy != "" {
+func joinAttr(field *Field) string {
+	attr := field.Attribute
+	if field.SortBy != "" {
 		attr += ":"
-		attr += f.SortBy
+		attr += field.SortBy
 	}
-	if f.Order != "" {
+	if field.Order != "" {
 		attr += ":"
-		attr += f.Order
+		attr += field.Order
 	}
 	return attr
 }

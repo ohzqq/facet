@@ -15,9 +15,6 @@ func (t *Field) SortTokens() []*Keyword {
 		}
 		SortTokensByAlpha(tokens)
 	default:
-		if t.Order == "" {
-			t.Order = "desc"
-		}
 		SortTokensByCount(tokens)
 	}
 

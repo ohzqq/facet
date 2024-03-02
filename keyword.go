@@ -45,6 +45,10 @@ func (f *Keyword) Count() int {
 	return int(f.bits.GetCardinality())
 }
 
+func (f *Keyword) Len() int {
+	return int(f.bits.GetCardinality())
+}
+
 func (f *Keyword) Contains(id int) bool {
 	return f.bits.ContainsInt(id)
 }
@@ -59,21 +63,11 @@ func (f *Keyword) Add(ids ...int) {
 
 func (f *Keyword) MarshalJSON() ([]byte, error) {
 	item := map[string]any{
-		"count": f.Count(),
+		"count": f.Len(),
 		"value": f.Label,
 		"items": f.Items(),
 	}
 	return json.Marshal(item)
-}
-
-type keyword struct{}
-
-func (kw keyword) Tokenize(str any) []*Keyword {
-	return KeywordTokenizer(str)
-}
-
-func (kw keyword) Search(text string) []*Keyword {
-	return []*Keyword{NewKeyword(normalizeText(text))}
 }
 
 func KeywordTokenizer(val any) []*Keyword {
