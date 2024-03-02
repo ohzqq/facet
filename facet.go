@@ -3,7 +3,6 @@ package facet
 import (
 	"encoding/json"
 	"log"
-	"os"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/spf13/cast"
@@ -18,44 +17,43 @@ type Facets struct {
 }
 
 func New(params any) (*Facets, error) {
-	facets := NewFacets()
 
 	var err error
 
-	facets.Params, err = ParseParams(params)
+	p, err := ParseParams(params)
 	if err != nil {
 		return nil, err
 	}
 
-	facets.Facets = NewFields(facets.Attrs())
+	facets := NewFacets(p.Attrs())
+	facets.Params = p
+
+	facets.data, err = facets.Data()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	facets.Calculate()
 
 	if facets.vals.Has("facetFilters") {
-		filters := facets.Filters()
-		facets, err = facets.Filter(filters)
+		filtered, err := facets.Filter(facets.Filters())
 		if err != nil {
 			return nil, err
 		}
-		facets.Calculate()
+		return filtered.Calculate(), nil
 	}
 
 	return facets, nil
 }
 
-func NewFacets() *Facets {
+func NewFacets(fields []string) *Facets {
 	return &Facets{
-		bits: roaring.New(),
+		bits:   roaring.New(),
+		Facets: NewFields(fields),
 	}
 }
 
 func (f *Facets) Calculate() *Facets {
-	var err error
-	f.data, err = f.Data()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	uid := f.UID()
 
 	for id, d := range f.data {
@@ -81,9 +79,16 @@ func (f *Facets) Filter(filters []any) (*Facets, error) {
 		return nil, err
 	}
 
-	f.Hits = f.FilterBits(filtered)
+	facets := NewFacets(f.Attrs())
+	facets.Params = f.Params
 
-	return f, nil
+	facets.Hits = f.FilterBits(filtered)
+
+	if len(facets.Hits) > 0 {
+		facets.data = f.GetByID(facets.Hits...)
+	}
+
+	return facets, nil
 }
 
 func (f *Facets) FilterBits(bits *roaring.Bitmap) []int {
@@ -112,31 +117,6 @@ func (f Facets) GetFacet(attr string) *Field {
 		}
 	}
 	return &Field{}
-}
-
-func (p Facets) Data() ([]map[string]any, error) {
-	var data []map[string]any
-
-	if len(p.Hits) > 0 {
-		return p.GetByID(p.Hits...), nil
-	}
-
-	if p.vals.Has("data") {
-		for _, file := range p.vals["data"] {
-			f, err := os.Open(file)
-			if err != nil {
-				return nil, err
-			}
-			defer f.Close()
-
-			err = DecodeData(f, &data)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return data, nil
 }
 
 func (f Facets) Count() int {

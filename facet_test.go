@@ -47,6 +47,10 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 		t.Error(err)
 	}
 
+	for _, facet := range facets.Facets {
+		fmt.Printf("og %v got %d\n", facet.Attribute, facet.Count())
+	}
+
 	if len(facets.data) != 7174 {
 		t.Errorf("got %d items, expected %d\n", len(facets.data), 7174)
 	}

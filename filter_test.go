@@ -1,6 +1,7 @@
 package facet
 
 import (
+	"fmt"
 	"net/url"
 	"testing"
 )
@@ -115,6 +116,9 @@ func TestFilterVals(t *testing.T) {
 		filtered, err := Filter(facets.bits, facets.Facets, facets.Filters())
 		if err != nil {
 			t.Fatal(err)
+		}
+		for _, facet := range facets.Facets {
+			fmt.Printf("%v got %d\n", facet.Attribute, facet.Count())
 		}
 		if num := filtered.GetCardinality(); num != uint64(f.want) {
 			t.Errorf("got %d results, wanted %d\n", num, f.want)
