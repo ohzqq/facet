@@ -164,10 +164,6 @@ func (f *Field) String(i int) string {
 	return f.keywords[i].Label
 }
 
-func (f *Field) Count() int {
-	return len(f.keywords)
-}
-
 func joinAttr(field *Field) string {
 	attr := field.Attribute
 	if field.SortBy != "" {

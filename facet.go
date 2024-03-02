@@ -12,7 +12,6 @@ type Facets struct {
 	Facets  []*Field         `json:"facets"`
 	Hits    []map[string]any `json:"hits"`
 	bits    *roaring.Bitmap
-	hits    []int
 }
 
 func New(params any) (*Facets, error) {
