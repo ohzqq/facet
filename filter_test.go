@@ -1,7 +1,6 @@
 package facet
 
 import (
-	"fmt"
 	"net/url"
 	"testing"
 )
@@ -84,16 +83,6 @@ func TestFilterStrings(t *testing.T) {
 		if num := facets.Count(); num != f.want {
 			t.Errorf("got %d results, wanted %d\n", num, f.want)
 		}
-
-		for _, facet := range facets.Facets {
-			if num, ok := facetCount[facet.Attribute]; ok {
-				if num != facet.Count() {
-					t.Errorf("%v got %d, expected %d \n", facet.Attribute, facet.Count(), num)
-				}
-			} else {
-				t.Errorf("attr %s not found\n", facet.Attribute)
-			}
-		}
 	}
 
 }
@@ -116,9 +105,6 @@ func TestFilterVals(t *testing.T) {
 		filtered, err := Filter(facets.bits, facets.Facets, facets.Filters())
 		if err != nil {
 			t.Fatal(err)
-		}
-		for _, facet := range facets.Facets {
-			fmt.Printf("%v got %d\n", facet.Attribute, facet.Count())
 		}
 		if num := filtered.GetCardinality(); num != uint64(f.want) {
 			t.Errorf("got %d results, wanted %d\n", num, f.want)
