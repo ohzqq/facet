@@ -35,7 +35,7 @@ const (
 
 var filterStrs = []filterStr{
 	filterStr{
-		want:  2237,
+		want:  2241,
 		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr"]`,
 	},
 	filterStr{
@@ -43,24 +43,24 @@ var filterStrs = []filterStr{
 		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr", "tags:abo"]`,
 	},
 	filterStr{
-		want:  2270,
+		want:  2273,
 		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "tags:abo"]]`,
 	},
 	filterStr{
-		want:  417,
+		want:  32,
 		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["-tags:dnr", "tags:abo"]`,
 	},
 	filterStr{
-		want:  417,
+		want:  32,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:abo", "-tags:dnr"]`,
+	},
+	filterStr{
+		want:  5395,
 		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["-tags:dnr", "tags:abo"]]`,
 	},
 	filterStr{
-		want:  2237,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr","-tags:abo"]`,
-	},
-	filterStr{
-		want:  2237,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "-tags:abo"]]`,
+		want:  5395,
+		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[[ "tags:abo", "-tags:dnr"]]`,
 	},
 }
 
@@ -81,7 +81,7 @@ func TestFilterStrings(t *testing.T) {
 			t.Fatal(err)
 		}
 		if num := facets.Len(); num != f.want {
-			t.Errorf("got %d results, wanted %d\n", num, f.want)
+			t.Errorf("query %s:\ngot %d results, wanted %d\n", f.query, num, f.want)
 		}
 	}
 
