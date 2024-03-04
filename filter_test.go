@@ -1,6 +1,7 @@
 package facet
 
 import (
+	"encoding/json"
 	"net/url"
 	"testing"
 )
@@ -81,11 +82,11 @@ func TestFilterVals(t *testing.T) {
 			t.Errorf("got %d results, wanted %d\nfilters: %v\n", num, f.want, f.vals.Get("facetFilters"))
 		}
 
-		//enc, err := json.Marshal(facets)
-		//if err != nil {
-		//t.Error(err)
-		//}
-		//println(string(enc))
+		enc, err := json.Marshal(facets)
+		if err != nil {
+			t.Error(err)
+		}
+		println(string(enc))
 	}
 }
 

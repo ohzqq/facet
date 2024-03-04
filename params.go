@@ -44,7 +44,7 @@ func (f Params) UID() string {
 	if f.vals.Has("uid") {
 		return f.vals.Get("uid")
 	}
-	return "id"
+	return ""
 }
 
 func (p *Params) Filters() []any {

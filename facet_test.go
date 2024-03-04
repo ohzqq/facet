@@ -16,8 +16,8 @@ const numBooks = 7252
 const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=url`
 
 var queryStrTests = []string{
-	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`,
-	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`,
+	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id&facetFilters=["tags:dnr", "tags:abo"]`,
+	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&facetFilters=["tags:dnr", "tags:abo"]`,
 }
 
 var defFieldsStr = `tags,authors,narrators,series`
@@ -36,6 +36,31 @@ var facetCount = map[string]int{
 	"narrators": 1428,
 }
 
+func TestGetIDs(t *testing.T) {
+	for _, query := range queryStrTests {
+		facets, err := New(query)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		items := facets.filteredItems()
+		hits := facets.getHits()
+
+		if facets.vals.Has("uid") {
+			title := items[0]["title"]
+			var alt any
+			for _, item := range facets.data {
+				if hits[0] == item[facets.vals.Get("uid")] {
+					alt = item["title"]
+				}
+			}
+			if title != alt {
+				t.Errorf("uid: %s, slice idx %+v, id %+v\n", facets.UID(), items[0]["id"], hits[0])
+			}
+		}
+	}
+}
+
 func TestNewFacetsFromQueryString(t *testing.T) {
 	facets, err := New(testQueryString)
 	if err != nil {
@@ -47,8 +72,8 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(facets.Hits) != numBooks {
-		t.Errorf("got %d items, expected %d\n", len(facets.Hits), 7174)
+	if len(facets.data) != numBooks {
+		t.Errorf("got %d items, expected %d\n", len(facets.data), 7174)
 	}
 	//if len(facets.Hits) > 0 {
 	//  fmt.Printf("%+v\n", facets.Hits[0]["title"])
