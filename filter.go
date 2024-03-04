@@ -40,7 +40,6 @@ func Filter(bits *roaring.Bitmap, fields []*Field, filters []any) (*roaring.Bitm
 						o, n := strings.CutPrefix(o, "-")
 						f := field.Filter(o)
 						if n {
-							//not = append(not, f)
 							xo := roaring.AndNot(bits, f)
 							or = append(or, xo)
 						} else {
