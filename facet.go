@@ -53,7 +53,15 @@ func NewFacets(fields []string) *Facets {
 }
 
 func (f *Facets) Calculate() *Facets {
+	var uid string
+	if f.vals.Has("uid") {
+		uid = f.vals.Get("uid")
+	}
+
 	for id, d := range f.data {
+		if i, ok := d[uid]; ok {
+			id = cast.ToInt(i)
+		}
 		f.bits.AddInt(id)
 		for _, facet := range f.Facets {
 			if val, ok := d[facet.Attribute]; ok {
@@ -79,67 +87,27 @@ func (f *Facets) Filter(filters []any) (*Facets, error) {
 	f.bits.And(filtered)
 
 	if f.bits.GetCardinality() > 0 {
-		facets.data = f.filteredItems()
+		facets.data = f.getHits()
 	}
 
 	return facets, nil
 }
 
-func (f *Facets) filteredItems() []map[string]any {
-	var res []map[string]any
-	f.bits.Iterate(func(x uint32) bool {
-		res = append(res, f.data[int(x)])
-		return true
-	})
-	return res
-}
-
-func (f *Facets) getHits() []any {
-	var res []any
+func (f Facets) getHits() []map[string]any {
 	var uid string
 	if f.vals.Has("uid") {
 		uid = f.vals.Get("uid")
 	}
-
-	f.bits.Iterate(func(x uint32) bool {
-		d := f.data[int(x)]
-		if id, ok := d[uid]; ok {
-			res = append(res, id)
-		} else {
-			res = append(res, int(x))
-		}
-		return true
-	})
-	return res
-}
-
-func (f Facets) getItem(id int) (map[string]any, bool) {
-	uid := f.UID()
+	var hits []map[string]any
 	for idx, d := range f.data {
 		if i, ok := d[uid]; ok {
-			if cast.ToInt(i) == id {
-				return d, true
-			}
-		} else if id == idx {
-			return d, true
+			idx = cast.ToInt(i)
+		}
+		if f.bits.ContainsInt(idx) {
+			hits = append(hits, d)
 		}
 	}
-	return nil, false
-}
-
-func (f Facets) getItems() []map[string]any {
-	//uid := f.UID()
-
-	ids := cast.ToIntSlice(f.bits.ToArray())
-
-	data := make([]map[string]any, len(ids))
-	for _, id := range ids {
-		if d, ok := f.getItem(id); ok {
-			data = append(data, d)
-		}
-	}
-
-	return data
+	return hits
 }
 
 func (f Facets) GetFacet(attr string) *Field {
@@ -172,7 +140,7 @@ func (f *Facets) MarshalJSON() ([]byte, error) {
 	enc := make(map[string]any)
 	enc["params"] = f.EncodeQuery()
 	enc["facets"] = facets
-	enc["hits"] = f.getHits()
+	enc["hits"] = f.data
 	enc["nbHits"] = f.Len()
 
 	return json.Marshal(enc)

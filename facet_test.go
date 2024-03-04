@@ -36,31 +36,6 @@ var facetCount = map[string]int{
 	"narrators": 1428,
 }
 
-func TestGetIDs(t *testing.T) {
-	for _, query := range queryStrTests {
-		facets, err := New(query)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		items := facets.filteredItems()
-		hits := facets.getHits()
-
-		if facets.vals.Has("uid") {
-			title := items[0]["title"]
-			var alt any
-			for _, item := range facets.data {
-				if hits[0] == item[facets.vals.Get("uid")] {
-					alt = item["title"]
-				}
-			}
-			if title != alt {
-				t.Errorf("uid: %s, slice idx %+v, id %+v\n", facets.UID(), items[0]["id"], hits[0])
-			}
-		}
-	}
-}
-
 func TestNewFacetsFromQueryString(t *testing.T) {
 	facets, err := New(testQueryString)
 	if err != nil {
