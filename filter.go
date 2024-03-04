@@ -40,7 +40,9 @@ func Filter(bits *roaring.Bitmap, fields []*Field, filters []any) (*roaring.Bitm
 						o, n := strings.CutPrefix(o, "-")
 						f := field.Filter(o)
 						if n {
-							not = append(not, f)
+							//not = append(not, f)
+							xo := roaring.AndNot(bits, f)
+							or = append(or, xo)
 						} else {
 							or = append(or, f)
 						}
@@ -54,11 +56,15 @@ func Filter(bits *roaring.Bitmap, fields []*Field, filters []any) (*roaring.Bitm
 		bits.AndNot(n)
 	}
 
-	arb := roaring.ParAnd(viper.GetInt("workers"), and...)
-	bits.And(arb)
+	if len(and) > 0 {
+		arb := roaring.ParAnd(viper.GetInt("workers"), and...)
+		bits.And(arb)
+	}
 
-	orb := roaring.ParOr(viper.GetInt("workers"), or...)
-	bits.Or(orb)
+	if len(or) > 0 {
+		orb := roaring.ParOr(viper.GetInt("workers"), or...)
+		bits.And(orb)
+	}
 
 	return bits, nil
 }

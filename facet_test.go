@@ -30,7 +30,7 @@ var testQueryVals = url.Values{
 }
 
 var facetCount = map[string]int{
-	"tags":      217,
+	"tags":      218,
 	"authors":   1612,
 	"series":    1740,
 	"narrators": 1428,
