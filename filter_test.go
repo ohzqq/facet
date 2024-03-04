@@ -5,34 +5,6 @@ import (
 	"testing"
 )
 
-const (
-	// search params
-	Hits                 = `hits`
-	AttributesToRetrieve = `attributesToRetrieve`
-	Page                 = "page"
-	HitsPerPage          = "hitsPerPage"
-	SortFacetsBy         = `sortFacetValuesBy`
-	ParamFacets          = "facets"
-	ParamFilters         = "filters"
-	FacetFilters         = `facetFilters`
-	ParamFullText        = `fullText`
-	NbHits               = `nbHits`
-	NbPages              = `nbPages`
-	SortBy               = `sortBy`
-	Order                = `order`
-
-	// Settings
-	SrchAttr     = `searchableAttributes`
-	FacetAttr    = `attributesForFaceting`
-	SortAttr     = `sortableAttributes`
-	DataDir      = `dataDir`
-	DataFile     = `dataFile`
-	DefaultField = `title`
-
-	TextAnalyzer    = "text"
-	KeywordAnalyzer = "keyword"
-)
-
 var filterStrs = []filterStr{
 	filterStr{
 		want:  2241,
@@ -126,7 +98,7 @@ func testSearchFilterStrings() []filterVal {
 		vals: url.Values{
 			"data":                  []string{"testdata/ndbooks.json"},
 			"attributesForFaceting": []string{"tags", "authors"},
-			FacetFilters: []string{
+			"facetFilters": []string{
 				`["authors:amy lane"]`,
 			},
 		},
@@ -137,7 +109,7 @@ func testSearchFilterStrings() []filterVal {
 		vals: url.Values{
 			"data":                  []string{"testdata/ndbooks.json"},
 			"attributesForFaceting": []string{"tags", "authors"},
-			FacetFilters: []string{
+			"facetFilters": []string{
 				`["authors:amy lane", ["tags:romance"]]`,
 			},
 		},
@@ -148,7 +120,7 @@ func testSearchFilterStrings() []filterVal {
 		vals: url.Values{
 			"data":                  []string{"testdata/ndbooks.json"},
 			"attributesForFaceting": []string{"tags", "authors"},
-			FacetFilters: []string{
+			"facetFilters": []string{
 				`["authors:amy lane", ["tags:romance", "tags:-dnr"]]`,
 			},
 		},
@@ -159,7 +131,7 @@ func testSearchFilterStrings() []filterVal {
 		vals: url.Values{
 			"data":                  []string{"testdata/ndbooks.json"},
 			"attributesForFaceting": []string{"tags", "authors"},
-			FacetFilters: []string{
+			"facetFilters": []string{
 				`["tags:abo", "tags:dnr", "tags:horror"]`,
 			},
 		},
