@@ -51,7 +51,12 @@ func NewFacets(fields []string) *Facets {
 }
 
 func (f *Facets) Calculate() *Facets {
+	//uid := f.UID()
+
 	for id, d := range f.Hits {
+		//if i, ok := d[uid]; ok {
+		//id = cast.ToInt(i)
+		//}
 		f.bits.AddInt(id)
 		for _, facet := range f.Facets {
 			if val, ok := d[facet.Attribute]; ok {
@@ -114,6 +119,7 @@ func (f *Facets) MarshalJSON() ([]byte, error) {
 	enc["params"] = f.EncodeQuery()
 	enc["facets"] = facets
 	enc["hits"] = f.Hits
+	enc["nbHits"] = f.Len()
 
 	return json.Marshal(enc)
 }

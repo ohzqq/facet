@@ -40,6 +40,13 @@ func (p Params) Attrs() []string {
 	return []string{}
 }
 
+func (f Params) UID() string {
+	if f.vals.Has("uid") {
+		return f.vals.Get("uid")
+	}
+	return "id"
+}
+
 func (p *Params) Filters() []any {
 	if p.vals.Has("facetFilters") {
 		fils, err := unmarshalFilter(p.vals.Get("facetFilters"))
@@ -67,6 +74,7 @@ func (p Params) Data() ([]map[string]any, error) {
 			}
 		}
 	}
+	//fmt.Printf("num data %d\n", len(data))
 
 	return data, nil
 }

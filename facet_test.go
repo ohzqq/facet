@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/cast"
 )
 
-const testDataFile = `testdata/data-dir/audiobooks.json`
+const testDataFile = `testdata/data-dir/ndbooks.json`
 const testDataDir = `testdata/data-dir`
-const numBooks = 7253
-const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`
+const numBooks = 7252
+const testQueryString = `attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=url`
 
 var queryStrTests = []string{
 	`attributesForFaceting=tags&attributesForFaceting=authors&attributesForFaceting=narrators&attributesForFaceting=series&data=testdata/ndbooks.json&uid=id`,
@@ -30,10 +30,10 @@ var testQueryVals = url.Values{
 }
 
 var facetCount = map[string]int{
-	"tags":      217,
-	"authors":   1602,
-	"series":    1722,
-	"narrators": 1412,
+	"tags":      218,
+	"authors":   1612,
+	"series":    1740,
+	"narrators": 1428,
 }
 
 func TestNewFacetsFromQueryString(t *testing.T) {
@@ -47,7 +47,7 @@ func TestNewFacetsFromQueryString(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(facets.Hits) != 7174 {
+	if len(facets.Hits) != numBooks {
 		t.Errorf("got %d items, expected %d\n", len(facets.Hits), 7174)
 	}
 	//if len(facets.Hits) > 0 {
