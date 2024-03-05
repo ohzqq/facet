@@ -61,7 +61,7 @@ func (kw *Keyword) MarshalJSON() ([]byte, error) {
 	item := map[string]any{
 		"count": kw.Len(),
 		"value": kw.Label,
-		"items": kw.Items(),
+		"hits":  kw.Items(),
 	}
 	return json.Marshal(item)
 }

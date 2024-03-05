@@ -3,6 +3,7 @@ package facet
 import (
 	"encoding/json"
 	"net/url"
+	"os"
 	"testing"
 )
 
@@ -87,6 +88,11 @@ func TestFilterVals(t *testing.T) {
 			t.Error(err)
 		}
 		println(string(enc))
+
+		err = facets.Encode(os.Stdout)
+		if err != nil {
+			t.Error(err)
+		}
 	}
 }
 

@@ -2,6 +2,7 @@ package facet
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 
 	"github.com/RoaringBitmap/roaring"
@@ -131,19 +132,39 @@ func (f *Facets) Bitmap() *roaring.Bitmap {
 	return f.bits
 }
 
+func (f *Facets) Encode(w io.Writer) error {
+	enc := json.NewEncoder(w)
+	for _, d := range f.data {
+		err := enc.Encode(d)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (f *Facets) MarshalJSON() ([]byte, error) {
+	enc := f.resultMeta()
+	enc["hits"] = f.data
+	if len(f.data) < 1 {
+		enc["hits"] = []any{}
+	}
+
+	return json.Marshal(enc)
+}
+
+func (f *Facets) resultMeta() map[string]any {
+	enc := make(map[string]any)
+
 	facets := make(map[string]*Field)
 	for _, facet := range f.Facets {
 		facets[facet.Attribute] = facet
 	}
-
-	enc := make(map[string]any)
-	enc["params"] = f.EncodeQuery()
 	enc["facets"] = facets
-	enc["hits"] = f.data
-	enc["nbHits"] = f.Len()
 
-	return json.Marshal(enc)
+	f.vals.Set("nbHits", cast.ToString(f.Len()))
+	enc["params"] = f.EncodeQuery()
+	return enc
 }
 
 func ItemsByBitmap(data []map[string]any, bits *roaring.Bitmap) []map[string]any {

@@ -43,8 +43,12 @@ func NewFields(attrs []string) []*Field {
 
 func (f *Field) MarshalJSON() ([]byte, error) {
 	field := make(map[string]any)
-	field["facetItems"] = f.Keywords()
+	field["facetValues"] = f.Keywords()
+	if f.Len() < 1 {
+		field["facetValues"] = []any{}
+	}
 	field["attribute"] = joinAttr(f)
+	field["count"] = f.Len()
 	return json.Marshal(field)
 }
 
@@ -53,7 +57,7 @@ func (f *Field) Keywords() []*Keyword {
 }
 
 func (f *Field) GetValues() []string {
-	vals := make([]string, len(f.keywords))
+	vals := make([]string, f.Len())
 	for i, token := range f.keywords {
 		vals[i] = token.Value
 	}
