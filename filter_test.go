@@ -119,6 +119,7 @@ func testSearchFilterStrings() []filterVal {
 	queries = append(queries, filterVal{
 		want: 41,
 		vals: url.Values{
+			//"uid": []string{"id"},
 			"data":                  []string{"testdata/ndbooks.json"},
 			"attributesForFaceting": []string{"tags", "authors"},
 			"facetFilters": []string{
