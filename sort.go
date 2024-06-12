@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func (f *Field) SortTokens() []*Keyword {
+func (f *Field) SortTokens() []*Token {
 	tokens := f.keywords
 
 	switch f.SortBy {
@@ -25,17 +25,17 @@ func (f *Field) SortTokens() []*Keyword {
 	return tokens
 }
 
-func SortTokensByCount(items []*Keyword) []*Keyword {
+func SortTokensByCount(items []*Token) []*Token {
 	slices.SortStableFunc(items, SortByCountFunc)
 	return items
 }
 
-func SortTokensByAlpha(items []*Keyword) []*Keyword {
+func SortTokensByAlpha(items []*Token) []*Token {
 	slices.SortStableFunc(items, SortByAlphaFunc)
 	return items
 }
 
-func SortByCountFunc(a *Keyword, b *Keyword) int {
+func SortByCountFunc(a *Token, b *Token) int {
 	aC := a.Count()
 	bC := b.Count()
 	switch {
@@ -48,7 +48,7 @@ func SortByCountFunc(a *Keyword, b *Keyword) int {
 	}
 }
 
-func SortByAlphaFunc(a *Keyword, b *Keyword) int {
+func SortByAlphaFunc(a *Token, b *Token) int {
 	aL := strings.ToLower(a.Label)
 	bL := strings.ToLower(b.Label)
 	switch {

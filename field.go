@@ -19,7 +19,7 @@ type Field struct {
 	Sep       string `json:"-"`
 	SortBy    string
 	Order     string
-	keywords  []*Keyword
+	keywords  []*Token
 	kwIdx     map[string]int
 }
 
@@ -52,7 +52,7 @@ func (f *Field) MarshalJSON() ([]byte, error) {
 	return json.Marshal(field)
 }
 
-func (f *Field) Keywords() []*Keyword {
+func (f *Field) Keywords() []*Token {
 	return f.SortTokens()
 }
 
@@ -64,26 +64,26 @@ func (f *Field) GetValues() []string {
 	return vals
 }
 
-func (f *Field) FindByLabel(label string) *Keyword {
+func (f *Field) FindByLabel(label string) *Token {
 	for _, token := range f.keywords {
 		if token.Label == label {
 			return token
 		}
 	}
-	return NewKeyword(label)
+	return NewToken(label)
 }
 
-func (f *Field) FindByValue(val string) *Keyword {
+func (f *Field) FindByValue(val string) *Token {
 	for _, token := range f.keywords {
 		if token.Value == val {
 			return token
 		}
 	}
-	return NewKeyword(val)
+	return NewToken(val)
 }
 
-func (f *Field) FindByIndex(ti ...int) []*Keyword {
-	var tokens []*Keyword
+func (f *Field) FindByIndex(ti ...int) []*Token {
+	var tokens []*Token
 	for _, tok := range ti {
 		if tok < f.Len() {
 			tokens = append(tokens, f.keywords[tok])
@@ -108,13 +108,13 @@ func (f *Field) Add(val any, ids []int) {
 	}
 }
 
-func (f *Field) Tokenize(val any) []*Keyword {
+func (f *Field) Tokenize(val any) []*Token {
 	return KeywordTokenizer(val)
 }
 
-func (f *Field) Search(term string) []*Keyword {
+func (f *Field) Search(term string) []*Token {
 	matches := fuzzy.FindFrom(term, f)
-	tokens := make([]*Keyword, len(matches))
+	tokens := make([]*Token, len(matches))
 	for i, match := range matches {
 		tokens[i] = f.keywords[match.Index]
 	}
@@ -130,8 +130,8 @@ func (f *Field) Filter(val string) *roaring.Bitmap {
 	return roaring.ParAnd(viper.GetInt("workers"), bits...)
 }
 
-func (f *Field) Find(val any) []*Keyword {
-	var tokens []*Keyword
+func (f *Field) Find(val any) []*Token {
+	var tokens []*Token
 	for _, tok := range f.Tokenize(val) {
 		if token, ok := f.kwIdx[tok.Value]; ok {
 			tokens = append(tokens, f.keywords[token])
