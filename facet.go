@@ -7,14 +7,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type Facetz struct {
-	*Params `json:"params"`
-	Facets  []*Field         `json:"facets"`
-	data    []map[string]any `json:"hits"`
-	ids     []string
-	bits    *roaring.Bitmap
-}
-
 type Facets struct {
 	bits   *roaring.Bitmap
 	pk     string
@@ -27,9 +19,11 @@ func New(data []map[string]any, fields []string, pk string, filters ...any) *Fac
 		pk:     pk,
 		Fields: make(map[string]*Field),
 	}
+
 	if len(fields) < 1 && len(data) > 0 {
 		fields = maps.Keys(data[0])
 	}
+
 	for _, field := range fields {
 		f.Fields[field] = NewField(field)
 	}

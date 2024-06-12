@@ -16,8 +16,8 @@ func SortTokensByAlpha(items []*Token) []*Token {
 }
 
 func SortByCountFunc(a *Token, b *Token) int {
-	aC := a.Count()
-	bC := b.Count()
+	aC := a.Len()
+	bC := b.Len()
 	switch {
 	case aC > bC:
 		return 1

@@ -27,17 +27,8 @@ func (kw *Token) Bitmap() *roaring.Bitmap {
 	return kw.bits
 }
 
-func (kw *Token) SetValue(txt string) *Token {
-	kw.Value = txt
-	return kw
-}
-
 func (kw *Token) Items() []int {
 	return cast.ToIntSlice(kw.bits.ToArray())
-}
-
-func (kw *Token) Count() int {
-	return int(kw.bits.GetCardinality())
 }
 
 func (kw *Token) Len() int {

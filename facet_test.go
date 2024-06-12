@@ -5,8 +5,6 @@ import (
 	"net/url"
 	"os"
 	"testing"
-
-	"github.com/spf13/cast"
 )
 
 const testDataFile = `testdata/data-dir/audiobooks.json`
@@ -93,20 +91,6 @@ func TestFilterFacets(t *testing.T) {
 			}
 		}
 	}
-}
-
-func dataToMap() (map[string]map[string]any, error) {
-	data, err := loadData()
-	if err != nil {
-		return nil, err
-	}
-
-	d := make(map[string]map[string]any)
-	for _, i := range data {
-		id := cast.ToString(i["id"])
-		d[id] = i
-	}
-	return d, nil
 }
 
 func loadData() ([]map[string]any, error) {

@@ -5,42 +5,6 @@ import (
 	"testing"
 )
 
-var filterStrs = []filterStr{
-	filterStr{
-		want:  2241,
-		query: `[j"tags:dnr"]`,
-	},
-	filterStr{
-		want:  384,
-		query: `["tags:dnr", "tags:abo"]`,
-	},
-	filterStr{
-		want:  32,
-		query: `["tags:-dnr", "tags:abo"]`,
-	},
-	filterStr{
-		want:  32,
-		query: `["tags:abo", "tags:-dnr"]`,
-	},
-	filterStr{
-		want:  2273,
-		query: `[["tags:dnr", "tags:abo"]]`,
-	},
-	filterStr{
-		want:  5395,
-		query: `[["tags:-dnr", "tags:abo"]]`,
-	},
-	filterStr{
-		want:  5395,
-		query: `[[ "tags:abo", "tags:-dnr"]]`,
-	},
-}
-
-type filterStr struct {
-	query string
-	want  int
-}
-
 type filterVal struct {
 	vals url.Values
 	want int
