@@ -2,9 +2,9 @@ package facet
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/avito-tech/normalize"
 	"github.com/spf13/cast"
 )
 
@@ -19,23 +19,8 @@ func NewToken(label string) *Token {
 		Label: label,
 		bits:  roaring.New(),
 	}
-	tok.Value = normalizeText(label)
+	tok.Value = normalize.Normalize(label)
 	return tok
-}
-
-func Tokenize(val any) []*Token {
-	var tokens []string
-	switch v := val.(type) {
-	case string:
-		tokens = append(tokens, v)
-	default:
-		tokens = cast.ToStringSlice(v)
-	}
-	items := make([]*Token, len(tokens))
-	for i, token := range tokens {
-		items[i] = NewToken(token)
-	}
-	return items
 }
 
 func (kw *Token) Bitmap() *roaring.Bitmap {
@@ -48,8 +33,7 @@ func (kw *Token) SetValue(txt string) *Token {
 }
 
 func (kw *Token) Items() []int {
-	i := kw.bits.ToArray()
-	return cast.ToIntSlice(i)
+	return cast.ToIntSlice(kw.bits.ToArray())
 }
 
 func (kw *Token) Count() int {
@@ -60,13 +44,9 @@ func (kw *Token) Len() int {
 	return int(kw.bits.GetCardinality())
 }
 
-func (kw *Token) Contains(id int) bool {
-	return kw.bits.ContainsInt(id)
-}
-
 func (kw *Token) Add(ids ...int) {
 	for _, id := range ids {
-		if !kw.Contains(id) {
+		if !kw.bits.ContainsInt(id) {
 			kw.bits.AddInt(id)
 		}
 	}
@@ -79,39 +59,4 @@ func (kw *Token) MarshalJSON() ([]byte, error) {
 		"hits":  kw.Items(),
 	}
 	return json.Marshal(item)
-}
-
-func normalizeText(token string) string {
-	fields := lowerCase(strings.Split(token, " "))
-	for t, term := range fields {
-		if len(term) == 1 {
-			fields[t] = term
-		} else {
-			fields[t] = stripNonAlphaNumeric(term)
-		}
-	}
-	return strings.Join(fields, " ")
-}
-
-func lowerCase(tokens []string) []string {
-	lower := make([]string, len(tokens))
-	for i, str := range tokens {
-		lower[i] = strings.ToLower(str)
-	}
-	return lower
-}
-
-func stripNonAlphaNumeric(token string) string {
-	s := []byte(token)
-	n := 0
-	for _, b := range s {
-		if ('a' <= b && b <= 'z') ||
-			('A' <= b && b <= 'Z') ||
-			('0' <= b && b <= '9') ||
-			b == ' ' {
-			s[n] = b
-			n++
-		}
-	}
-	return string(s[:n])
 }

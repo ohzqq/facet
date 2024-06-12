@@ -5,8 +5,10 @@ go 1.21.4
 require (
 	github.com/Masterminds/squirrel v1.5.4 // indirect
 	github.com/RoaringBitmap/roaring v1.7.0 // indirect
+	github.com/agnivade/levenshtein v1.1.0 // indirect
 	github.com/alecthomas/participle v0.7.1 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
+	github.com/avito-tech/normalize v0.1.0 // indirect
 	github.com/bits-and-blooms/bitset v1.12.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

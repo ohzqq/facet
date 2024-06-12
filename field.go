@@ -7,6 +7,7 @@ import (
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/sahilm/fuzzy"
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 )
 
@@ -130,7 +131,18 @@ func (f *Field) Add(val any, ids []int) {
 }
 
 func (f *Field) Tokenize(val any) []*Token {
-	return Tokenize(val)
+	var tokens []string
+	switch v := val.(type) {
+	case string:
+		tokens = append(tokens, v)
+	default:
+		tokens = cast.ToStringSlice(v)
+	}
+	items := make([]*Token, len(tokens))
+	for i, token := range tokens {
+		items[i] = NewToken(token)
+	}
+	return items
 }
 
 func (f *Field) Search(term string) []*Token {
