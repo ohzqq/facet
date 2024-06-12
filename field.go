@@ -113,7 +113,7 @@ func (f *Fieldz) Add(val any, ids []int) {
 }
 
 func (f *Fieldz) Tokenize(val any) []*Token {
-	return KeywordTokenizer(val)
+	return Tokenize(val)
 }
 
 func (f *Fieldz) Search(term string) []*Token {

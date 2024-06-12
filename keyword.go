@@ -16,11 +16,12 @@ type Token struct {
 }
 
 func NewToken(label string) *Token {
-	return &Token{
-		Value: label,
+	tok := &Token{
 		Label: label,
 		bits:  roaring.New(),
 	}
+	tok.Value = normalizeText(label)
+	return tok
 }
 
 func (kw *Token) Bitmap() *roaring.Bitmap {
@@ -66,7 +67,7 @@ func (kw *Token) MarshalJSON() ([]byte, error) {
 	return json.Marshal(item)
 }
 
-func KeywordTokenizer(val any) []*Token {
+func Tokenize(val any) []*Token {
 	var tokens []string
 	switch v := val.(type) {
 	case string:
@@ -77,7 +78,6 @@ func KeywordTokenizer(val any) []*Token {
 	items := make([]*Token, len(tokens))
 	for i, token := range tokens {
 		items[i] = NewToken(token)
-		items[i].Value = normalizeText(token)
 	}
 	return items
 }

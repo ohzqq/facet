@@ -22,21 +22,22 @@ type Facetz struct {
 type Facets struct {
 	bits   *roaring.Bitmap
 	pk     string
-	fields map[string]*Fieldz
+	Fields map[string]*Fieldz
 }
 
 func New(data []map[string]any, fields []string, pk string, filters ...any) *Facets {
 	f := &Facets{
 		bits:   roaring.New(),
 		pk:     pk,
-		fields: make(map[string]*Fieldz),
+		Fields: make(map[string]*Fieldz),
 	}
 	if len(fields) < 1 && len(data) > 0 {
 		fields = maps.Keys(data[0])
 	}
 	for _, field := range fields {
-		f.fields[field] = NewFieldz(field)
+		f.Fields[field] = NewFieldz(field)
 	}
+
 	for idx, d := range data {
 		if id, ok := d[pk]; ok {
 			idx = cast.ToInt(id)
@@ -48,11 +49,40 @@ func New(data []map[string]any, fields []string, pk string, filters ...any) *Fac
 			facetable = d
 		}
 		for field, v := range facetable {
-			f.fields[field].Add(v, []int{idx})
+			f.Fields[field].Add(v, []int{idx})
+		}
+	}
 
+	if len(filters) > 0 {
+		err := f.Filter(filters)
+		if err != nil {
+			return nil
+		}
+		if f.bits.GetCardinality() > 0 {
+			res := lo.Filter(data, f.filterItem)
+			return New(res, fields, pk)
 		}
 	}
 	return f
+}
+
+func (f *Facets) filterItem(item map[string]any, idx int) bool {
+	if id, ok := item[f.pk]; ok {
+		idx = cast.ToInt(id)
+	}
+	return f.bits.ContainsInt(idx)
+}
+
+func (f *Facets) Filter(filters []any) error {
+	fields := maps.Values(f.Fields)
+	filtered, err := Filter(f.bits, fields, filters)
+	if err != nil {
+		return err
+	}
+
+	f.bits.And(filtered)
+
+	return nil
 }
 
 func NNew(params any) (*Facetz, error) {

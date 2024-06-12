@@ -49,7 +49,7 @@ func (f Params) UID() string {
 
 func (p *Params) Filters() []any {
 	if p.vals.Has("facetFilters") {
-		fils, err := unmarshalFilter(p.vals.Get("facetFilters"))
+		fils, err := ParseFilters(p.vals.Get("facetFilters"))
 		if err != nil {
 		}
 		return fils
