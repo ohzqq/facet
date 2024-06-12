@@ -96,7 +96,7 @@ func FilteredItems(data []map[string]any, ids []any) []map[string]any {
 	return items
 }
 
-func unmarshalFilter(dec string) ([]any, error) {
+func ParseFilters(dec string) ([]any, error) {
 	var f []any
 	err := json.Unmarshal([]byte(dec), &f)
 	if err != nil {

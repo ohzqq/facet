@@ -5,26 +5,6 @@ import (
 	"strings"
 )
 
-func (f *Field) SortTokens() []*Token {
-	tokens := f.keywords
-
-	switch f.SortBy {
-	case SortByAlpha:
-		if f.Order == "" {
-			f.Order = "asc"
-		}
-		SortTokensByAlpha(tokens)
-	default:
-		SortTokensByCount(tokens)
-	}
-
-	if f.Order == "desc" {
-		slices.Reverse(tokens)
-	}
-
-	return tokens
-}
-
 func SortTokensByCount(items []*Token) []*Token {
 	slices.SortStableFunc(items, SortByCountFunc)
 	return items
@@ -36,8 +16,8 @@ func SortTokensByAlpha(items []*Token) []*Token {
 }
 
 func SortByCountFunc(a *Token, b *Token) int {
-	aC := a.Count()
-	bC := b.Count()
+	aC := a.Len()
+	bC := b.Len()
 	switch {
 	case aC > bC:
 		return 1
