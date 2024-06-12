@@ -8,31 +8,31 @@ import (
 var filterStrs = []filterStr{
 	filterStr{
 		want:  2241,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr"]`,
+		query: `[j"tags:dnr"]`,
 	},
 	filterStr{
 		want:  384,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:dnr", "tags:abo"]`,
+		query: `["tags:dnr", "tags:abo"]`,
 	},
 	filterStr{
 		want:  32,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:-dnr", "tags:abo"]`,
+		query: `["tags:-dnr", "tags:abo"]`,
 	},
 	filterStr{
 		want:  32,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=["tags:abo", "tags:-dnr"]`,
+		query: `["tags:abo", "tags:-dnr"]`,
 	},
 	filterStr{
 		want:  2273,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:dnr", "tags:abo"]]`,
+		query: `[["tags:dnr", "tags:abo"]]`,
 	},
 	filterStr{
 		want:  5395,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[["tags:-dnr", "tags:abo"]]`,
+		query: `[["tags:-dnr", "tags:abo"]]`,
 	},
 	filterStr{
 		want:  5395,
-		query: `data=testdata/ndbooks.json&attributesForFaceting=tags&facetFilters=[[ "tags:abo", "tags:-dnr"]]`,
+		query: `[[ "tags:abo", "tags:-dnr"]]`,
 	},
 }
 
@@ -46,51 +46,21 @@ type filterVal struct {
 	want int
 }
 
-func TestFilterStrings(t *testing.T) {
-	for _, f := range filterStrs {
-		facets, err := NNew(f.query)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if num := facets.Len(); num != f.want {
-			t.Errorf("query %s:\ngot %d results, wanted %d\n", f.query, num, f.want)
-		}
-	}
-
-}
-
 func TestFilterVals(t *testing.T) {
+	data, err := loadData()
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, f := range testSearchFilterStrings() {
-		facets, err := NNew(f.vals)
+		filter := f.vals.Get("facetFilters")
+		filters, err := ParseFilters(filter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
+		facets := New(data, defFieldsSlice, "id", filters...)
 		if num := facets.Len(); num != f.want {
 			t.Errorf("got %d results, wanted %d\nfilters: %v\n", num, f.want, f.vals.Get("facetFilters"))
 		}
-		//if len(facets.Hits) > 0 {
-		//  fmt.Printf("%v: %+v\n", f.vals.Encode(), facets.Hits[0]["title"])
-		//}
-		//println(facets.Len())
-
-		facets, err = NNew(f.vals.Encode())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if num := facets.Len(); num != f.want {
-			t.Errorf("got %d results, wanted %d\nfilters: %v\n", num, f.want, f.vals.Get("facetFilters"))
-		}
-
-		//enc, err := json.Marshal(facets)
-		//if err != nil {
-		//t.Error(err)
-		//}
-		//println(string(enc))
-
-		//err = facets.Encode(os.Stdout)
-		//if err != nil {
-		//t.Error(err)
-		//}
 	}
 }
 
