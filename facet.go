@@ -1,9 +1,6 @@
 package facet
 
 import (
-	"encoding/json"
-	"io"
-
 	"github.com/RoaringBitmap/roaring"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -12,7 +9,7 @@ import (
 
 type Facetz struct {
 	*Params `json:"params"`
-	Facets  []*Fieldz        `json:"facets"`
+	Facets  []*Field         `json:"facets"`
 	data    []map[string]any `json:"hits"`
 	ids     []string
 	bits    *roaring.Bitmap
@@ -21,20 +18,20 @@ type Facetz struct {
 type Facets struct {
 	bits   *roaring.Bitmap
 	pk     string
-	Fields map[string]*Fieldz
+	Fields map[string]*Field
 }
 
 func New(data []map[string]any, fields []string, pk string, filters ...any) *Facets {
 	f := &Facets{
 		bits:   roaring.New(),
 		pk:     pk,
-		Fields: make(map[string]*Fieldz),
+		Fields: make(map[string]*Field),
 	}
 	if len(fields) < 1 && len(data) > 0 {
 		fields = maps.Keys(data[0])
 	}
 	for _, field := range fields {
-		f.Fields[field] = NewFieldz(field)
+		f.Fields[field] = NewField(field)
 	}
 
 	for idx, d := range data {
@@ -90,15 +87,4 @@ func (f Facets) Len() int {
 
 func (f *Facets) Bitmap() *roaring.Bitmap {
 	return f.bits
-}
-
-func (f *Facetz) Encode(w io.Writer) error {
-	enc := json.NewEncoder(w)
-	for _, d := range f.data {
-		err := enc.Encode(d)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

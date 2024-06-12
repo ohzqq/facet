@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func Filter(bits *roaring.Bitmap, fields []*Fieldz, filters []any) (*roaring.Bitmap, error) {
+func Filter(bits *roaring.Bitmap, fields []*Field, filters []any) (*roaring.Bitmap, error) {
 	var (
 		and []*roaring.Bitmap
 		or  []*roaring.Bitmap

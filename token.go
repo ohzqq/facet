@@ -9,10 +9,9 @@ import (
 )
 
 type Token struct {
-	Value    string `json:"value"`
-	Label    string `json:"label"`
-	Children *Fieldz
-	bits     *roaring.Bitmap
+	Value string `json:"value"`
+	Label string `json:"label"`
+	bits  *roaring.Bitmap
 }
 
 func NewToken(label string) *Token {
@@ -22,6 +21,21 @@ func NewToken(label string) *Token {
 	}
 	tok.Value = normalizeText(label)
 	return tok
+}
+
+func Tokenize(val any) []*Token {
+	var tokens []string
+	switch v := val.(type) {
+	case string:
+		tokens = append(tokens, v)
+	default:
+		tokens = cast.ToStringSlice(v)
+	}
+	items := make([]*Token, len(tokens))
+	for i, token := range tokens {
+		items[i] = NewToken(token)
+	}
+	return items
 }
 
 func (kw *Token) Bitmap() *roaring.Bitmap {
@@ -65,21 +79,6 @@ func (kw *Token) MarshalJSON() ([]byte, error) {
 		"hits":  kw.Items(),
 	}
 	return json.Marshal(item)
-}
-
-func Tokenize(val any) []*Token {
-	var tokens []string
-	switch v := val.(type) {
-	case string:
-		tokens = append(tokens, v)
-	default:
-		tokens = cast.ToStringSlice(v)
-	}
-	items := make([]*Token, len(tokens))
-	for i, token := range tokens {
-		items[i] = NewToken(token)
-	}
-	return items
 }
 
 func normalizeText(token string) string {

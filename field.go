@@ -2,6 +2,7 @@ package facet
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 
 	"github.com/RoaringBitmap/roaring"
@@ -15,10 +16,6 @@ const (
 )
 
 type Field struct {
-	keywords []*Token
-}
-
-type Fieldz struct {
 	Attribute string `json:"attribute"`
 	Sep       string `json:"-"`
 	SortBy    string
@@ -27,8 +24,8 @@ type Fieldz struct {
 	kwIdx     map[string]int
 }
 
-func NewFieldz(attr string) *Fieldz {
-	f := &Fieldz{
+func NewField(attr string) *Field {
+	f := &Field{
 		Sep:    "/",
 		SortBy: "count",
 		Order:  "desc",
@@ -37,15 +34,15 @@ func NewFieldz(attr string) *Fieldz {
 	return f
 }
 
-func NewFieldzz(attrs []string) []*Fieldz {
-	fields := make([]*Fieldz, len(attrs))
+func NewFields(attrs []string) []*Field {
+	fields := make([]*Field, len(attrs))
 	for i, attr := range attrs {
-		fields[i] = NewFieldz(attr)
+		fields[i] = NewField(attr)
 	}
 	return fields
 }
 
-func (f *Fieldz) MarshalJSON() ([]byte, error) {
+func (f *Field) MarshalJSON() ([]byte, error) {
 	field := make(map[string]any)
 	field["facetValues"] = f.Keywords()
 	if f.Len() < 1 {
@@ -56,11 +53,31 @@ func (f *Fieldz) MarshalJSON() ([]byte, error) {
 	return json.Marshal(field)
 }
 
-func (f *Fieldz) Keywords() []*Token {
+func (f *Field) SortTokens() []*Token {
+	tokens := f.keywords
+
+	switch f.SortBy {
+	case SortByAlpha:
+		if f.Order == "" {
+			f.Order = "asc"
+		}
+		SortTokensByAlpha(tokens)
+	default:
+		SortTokensByCount(tokens)
+	}
+
+	if f.Order == "desc" {
+		slices.Reverse(tokens)
+	}
+
+	return tokens
+}
+
+func (f *Field) Keywords() []*Token {
 	return f.SortTokens()
 }
 
-func (f *Fieldz) GetValues() []string {
+func (f *Field) GetValues() []string {
 	vals := make([]string, f.Len())
 	for i, token := range f.keywords {
 		vals[i] = token.Value
@@ -68,7 +85,7 @@ func (f *Fieldz) GetValues() []string {
 	return vals
 }
 
-func (f *Fieldz) FindByLabel(label string) *Token {
+func (f *Field) FindByLabel(label string) *Token {
 	for _, token := range f.keywords {
 		if token.Label == label {
 			return token
@@ -77,7 +94,7 @@ func (f *Fieldz) FindByLabel(label string) *Token {
 	return NewToken(label)
 }
 
-func (f *Fieldz) FindByValue(val string) *Token {
+func (f *Field) FindByValue(val string) *Token {
 	for _, token := range f.keywords {
 		if token.Value == val {
 			return token
@@ -86,7 +103,7 @@ func (f *Fieldz) FindByValue(val string) *Token {
 	return NewToken(val)
 }
 
-func (f *Fieldz) FindByIndex(ti ...int) []*Token {
+func (f *Field) FindByIndex(ti ...int) []*Token {
 	var tokens []*Token
 	for _, tok := range ti {
 		if tok < f.Len() {
@@ -96,7 +113,7 @@ func (f *Fieldz) FindByIndex(ti ...int) []*Token {
 	return tokens
 }
 
-func (f *Fieldz) Add(val any, ids []int) {
+func (f *Field) Add(val any, ids []int) {
 	for _, token := range f.Tokenize(val) {
 		if f.kwIdx == nil {
 			f.kwIdx = make(map[string]int)
@@ -112,11 +129,11 @@ func (f *Fieldz) Add(val any, ids []int) {
 	}
 }
 
-func (f *Fieldz) Tokenize(val any) []*Token {
+func (f *Field) Tokenize(val any) []*Token {
 	return Tokenize(val)
 }
 
-func (f *Fieldz) Search(term string) []*Token {
+func (f *Field) Search(term string) []*Token {
 	matches := fuzzy.FindFrom(term, f)
 	tokens := make([]*Token, len(matches))
 	for i, match := range matches {
@@ -125,7 +142,7 @@ func (f *Fieldz) Search(term string) []*Token {
 	return tokens
 }
 
-func (f *Fieldz) Filter(val string) *roaring.Bitmap {
+func (f *Field) Filter(val string) *roaring.Bitmap {
 	tokens := f.Find(val)
 	bits := make([]*roaring.Bitmap, len(tokens))
 	for i, token := range tokens {
@@ -134,7 +151,7 @@ func (f *Fieldz) Filter(val string) *roaring.Bitmap {
 	return roaring.ParAnd(viper.GetInt("workers"), bits...)
 }
 
-func (f *Fieldz) Find(val any) []*Token {
+func (f *Field) Find(val any) []*Token {
 	var tokens []*Token
 	for _, tok := range f.Tokenize(val) {
 		if token, ok := f.kwIdx[tok.Value]; ok {
@@ -144,7 +161,7 @@ func (f *Fieldz) Find(val any) []*Token {
 	return tokens
 }
 
-func (f *Fieldz) Fuzzy(term string) *roaring.Bitmap {
+func (f *Field) Fuzzy(term string) *roaring.Bitmap {
 	matches := fuzzy.FindFrom(term, f)
 	bits := make([]*roaring.Bitmap, len(matches))
 	for i, match := range matches {
@@ -155,16 +172,16 @@ func (f *Fieldz) Fuzzy(term string) *roaring.Bitmap {
 }
 
 // Len returns the number of items, to satisfy the fuzzy.Source interface.
-func (f *Fieldz) Len() int {
+func (f *Field) Len() int {
 	return len(f.keywords)
 }
 
 // String returns an Item.Value, to satisfy the fuzzy.Source interface.
-func (f *Fieldz) String(i int) string {
+func (f *Field) String(i int) string {
 	return f.keywords[i].Label
 }
 
-func joinAttr(field *Fieldz) string {
+func joinAttr(field *Field) string {
 	attr := field.Attribute
 	if field.SortBy != "" {
 		attr += ":"
@@ -177,7 +194,7 @@ func joinAttr(field *Fieldz) string {
 	return attr
 }
 
-func parseAttr(field *Fieldz, attr string) {
+func parseAttr(field *Field, attr string) {
 	i := 0
 	for attr != "" {
 		var a string

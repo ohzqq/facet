@@ -5,26 +5,6 @@ import (
 	"strings"
 )
 
-func (f *Fieldz) SortTokens() []*Token {
-	tokens := f.keywords
-
-	switch f.SortBy {
-	case SortByAlpha:
-		if f.Order == "" {
-			f.Order = "asc"
-		}
-		SortTokensByAlpha(tokens)
-	default:
-		SortTokensByCount(tokens)
-	}
-
-	if f.Order == "desc" {
-		slices.Reverse(tokens)
-	}
-
-	return tokens
-}
-
 func SortTokensByCount(items []*Token) []*Token {
 	slices.SortStableFunc(items, SortByCountFunc)
 	return items
