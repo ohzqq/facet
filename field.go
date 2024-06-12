@@ -15,6 +15,10 @@ const (
 )
 
 type Field struct {
+	keywords []*Token
+}
+
+type Fieldz struct {
 	Attribute string `json:"attribute"`
 	Sep       string `json:"-"`
 	SortBy    string
@@ -23,8 +27,8 @@ type Field struct {
 	kwIdx     map[string]int
 }
 
-func NewField(attr string) *Field {
-	f := &Field{
+func NewFieldz(attr string) *Fieldz {
+	f := &Fieldz{
 		Sep:    "/",
 		SortBy: "count",
 		Order:  "desc",
@@ -33,15 +37,15 @@ func NewField(attr string) *Field {
 	return f
 }
 
-func NewFields(attrs []string) []*Field {
-	fields := make([]*Field, len(attrs))
+func NewFieldzz(attrs []string) []*Fieldz {
+	fields := make([]*Fieldz, len(attrs))
 	for i, attr := range attrs {
-		fields[i] = NewField(attr)
+		fields[i] = NewFieldz(attr)
 	}
 	return fields
 }
 
-func (f *Field) MarshalJSON() ([]byte, error) {
+func (f *Fieldz) MarshalJSON() ([]byte, error) {
 	field := make(map[string]any)
 	field["facetValues"] = f.Keywords()
 	if f.Len() < 1 {
@@ -52,11 +56,11 @@ func (f *Field) MarshalJSON() ([]byte, error) {
 	return json.Marshal(field)
 }
 
-func (f *Field) Keywords() []*Token {
+func (f *Fieldz) Keywords() []*Token {
 	return f.SortTokens()
 }
 
-func (f *Field) GetValues() []string {
+func (f *Fieldz) GetValues() []string {
 	vals := make([]string, f.Len())
 	for i, token := range f.keywords {
 		vals[i] = token.Value
@@ -64,7 +68,7 @@ func (f *Field) GetValues() []string {
 	return vals
 }
 
-func (f *Field) FindByLabel(label string) *Token {
+func (f *Fieldz) FindByLabel(label string) *Token {
 	for _, token := range f.keywords {
 		if token.Label == label {
 			return token
@@ -73,7 +77,7 @@ func (f *Field) FindByLabel(label string) *Token {
 	return NewToken(label)
 }
 
-func (f *Field) FindByValue(val string) *Token {
+func (f *Fieldz) FindByValue(val string) *Token {
 	for _, token := range f.keywords {
 		if token.Value == val {
 			return token
@@ -82,7 +86,7 @@ func (f *Field) FindByValue(val string) *Token {
 	return NewToken(val)
 }
 
-func (f *Field) FindByIndex(ti ...int) []*Token {
+func (f *Fieldz) FindByIndex(ti ...int) []*Token {
 	var tokens []*Token
 	for _, tok := range ti {
 		if tok < f.Len() {
@@ -92,7 +96,7 @@ func (f *Field) FindByIndex(ti ...int) []*Token {
 	return tokens
 }
 
-func (f *Field) Add(val any, ids []int) {
+func (f *Fieldz) Add(val any, ids []int) {
 	for _, token := range f.Tokenize(val) {
 		if f.kwIdx == nil {
 			f.kwIdx = make(map[string]int)
@@ -108,11 +112,11 @@ func (f *Field) Add(val any, ids []int) {
 	}
 }
 
-func (f *Field) Tokenize(val any) []*Token {
+func (f *Fieldz) Tokenize(val any) []*Token {
 	return KeywordTokenizer(val)
 }
 
-func (f *Field) Search(term string) []*Token {
+func (f *Fieldz) Search(term string) []*Token {
 	matches := fuzzy.FindFrom(term, f)
 	tokens := make([]*Token, len(matches))
 	for i, match := range matches {
@@ -121,7 +125,7 @@ func (f *Field) Search(term string) []*Token {
 	return tokens
 }
 
-func (f *Field) Filter(val string) *roaring.Bitmap {
+func (f *Fieldz) Filter(val string) *roaring.Bitmap {
 	tokens := f.Find(val)
 	bits := make([]*roaring.Bitmap, len(tokens))
 	for i, token := range tokens {
@@ -130,7 +134,7 @@ func (f *Field) Filter(val string) *roaring.Bitmap {
 	return roaring.ParAnd(viper.GetInt("workers"), bits...)
 }
 
-func (f *Field) Find(val any) []*Token {
+func (f *Fieldz) Find(val any) []*Token {
 	var tokens []*Token
 	for _, tok := range f.Tokenize(val) {
 		if token, ok := f.kwIdx[tok.Value]; ok {
@@ -140,7 +144,7 @@ func (f *Field) Find(val any) []*Token {
 	return tokens
 }
 
-func (f *Field) Fuzzy(term string) *roaring.Bitmap {
+func (f *Fieldz) Fuzzy(term string) *roaring.Bitmap {
 	matches := fuzzy.FindFrom(term, f)
 	bits := make([]*roaring.Bitmap, len(matches))
 	for i, match := range matches {
@@ -151,16 +155,16 @@ func (f *Field) Fuzzy(term string) *roaring.Bitmap {
 }
 
 // Len returns the number of items, to satisfy the fuzzy.Source interface.
-func (f *Field) Len() int {
+func (f *Fieldz) Len() int {
 	return len(f.keywords)
 }
 
 // String returns an Item.Value, to satisfy the fuzzy.Source interface.
-func (f *Field) String(i int) string {
+func (f *Fieldz) String(i int) string {
 	return f.keywords[i].Label
 }
 
-func joinAttr(field *Field) string {
+func joinAttr(field *Fieldz) string {
 	attr := field.Attribute
 	if field.SortBy != "" {
 		attr += ":"
@@ -173,7 +177,7 @@ func joinAttr(field *Field) string {
 	return attr
 }
 
-func parseAttr(field *Field, attr string) {
+func parseAttr(field *Fieldz, attr string) {
 	i := 0
 	for attr != "" {
 		var a string

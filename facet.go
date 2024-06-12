@@ -6,18 +6,56 @@ import (
 	"log"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/samber/lo"
 	"github.com/spf13/cast"
+	"golang.org/x/exp/maps"
 )
 
-type Facets struct {
+type Facetz struct {
 	*Params `json:"params"`
-	Facets  []*Field         `json:"facets"`
+	Facets  []*Fieldz        `json:"facets"`
 	data    []map[string]any `json:"hits"`
 	ids     []string
 	bits    *roaring.Bitmap
 }
 
-func New(params any) (*Facets, error) {
+type Facets struct {
+	bits   *roaring.Bitmap
+	pk     string
+	fields map[string]*Fieldz
+}
+
+func New(data []map[string]any, fields []string, pk string, filters ...any) *Facets {
+	f := &Facets{
+		bits:   roaring.New(),
+		pk:     pk,
+		fields: make(map[string]*Fieldz),
+	}
+	if len(fields) < 1 && len(data) > 0 {
+		fields = maps.Keys(data[0])
+	}
+	for _, field := range fields {
+		f.fields[field] = NewFieldz(field)
+	}
+	for idx, d := range data {
+		if id, ok := d[pk]; ok {
+			idx = cast.ToInt(id)
+		}
+		f.bits.AddInt(idx)
+
+		facetable := lo.PickByKeys(d, fields)
+		if len(facetable) < 1 {
+			facetable = d
+		}
+		for field, v := range facetable {
+			f.fields[field].Add(v, []int{idx})
+
+		}
+	}
+	return f
+}
+
+func NNew(params any) (*Facetz, error) {
 	var err error
 
 	p, err := ParseParams(params)
@@ -46,14 +84,14 @@ func New(params any) (*Facets, error) {
 	return facets, nil
 }
 
-func NewFacets(fields []string) *Facets {
-	return &Facets{
+func NewFacets(fields []string) *Facetz {
+	return &Facetz{
 		bits:   roaring.New(),
-		Facets: NewFields(fields),
+		Facets: NewFieldzz(fields),
 	}
 }
 
-func (f *Facets) Calculate() *Facets {
+func (f *Facetz) Calculate() *Facetz {
 	var uid string
 	if f.vals.Has("uid") {
 		uid = f.vals.Get("uid")
@@ -76,7 +114,7 @@ func (f *Facets) Calculate() *Facets {
 	return f
 }
 
-func (f *Facets) Filter(filters []any) (*Facets, error) {
+func (f *Facetz) Filter(filters []any) (*Facetz, error) {
 	filtered, err := Filter(f.bits, f.Facets, filters)
 	if err != nil {
 		return nil, err
@@ -94,7 +132,7 @@ func (f *Facets) Filter(filters []any) (*Facets, error) {
 	return facets, nil
 }
 
-func (f Facets) getHits() []map[string]any {
+func (f Facetz) getHits() []map[string]any {
 	var uid string
 	if f.vals.Has("uid") {
 		uid = f.vals.Get("uid")
@@ -111,28 +149,28 @@ func (f Facets) getHits() []map[string]any {
 	return hits
 }
 
-func (f Facets) GetFacet(attr string) *Field {
+func (f Facetz) GetFacet(attr string) *Fieldz {
 	for _, facet := range f.Facets {
 		if facet.Attribute == attr {
 			return facet
 		}
 	}
-	return &Field{}
+	return &Fieldz{}
 }
 
-func (f Facets) Len() int {
+func (f Facetz) Len() int {
 	return int(f.bits.GetCardinality())
 }
 
-func (f Facets) EncodeQuery() string {
+func (f Facetz) EncodeQuery() string {
 	return f.vals.Encode()
 }
 
-func (f *Facets) Bitmap() *roaring.Bitmap {
+func (f *Facetz) Bitmap() *roaring.Bitmap {
 	return f.bits
 }
 
-func (f *Facets) Encode(w io.Writer) error {
+func (f *Facetz) Encode(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	for _, d := range f.data {
 		err := enc.Encode(d)
@@ -143,7 +181,7 @@ func (f *Facets) Encode(w io.Writer) error {
 	return nil
 }
 
-func (f *Facets) MarshalJSON() ([]byte, error) {
+func (f *Facetz) MarshalJSON() ([]byte, error) {
 	enc := f.resultMeta()
 	enc["hits"] = f.data
 	if len(f.data) < 1 {
@@ -153,10 +191,10 @@ func (f *Facets) MarshalJSON() ([]byte, error) {
 	return json.Marshal(enc)
 }
 
-func (f *Facets) resultMeta() map[string]any {
+func (f *Facetz) resultMeta() map[string]any {
 	enc := make(map[string]any)
 
-	facets := make(map[string]*Field)
+	facets := make(map[string]*Fieldz)
 	for _, facet := range f.Facets {
 		facets[facet.Attribute] = facet
 	}

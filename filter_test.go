@@ -48,7 +48,7 @@ type filterVal struct {
 
 func TestFilterStrings(t *testing.T) {
 	for _, f := range filterStrs {
-		facets, err := New(f.query)
+		facets, err := NNew(f.query)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -61,7 +61,7 @@ func TestFilterStrings(t *testing.T) {
 
 func TestFilterVals(t *testing.T) {
 	for _, f := range testSearchFilterStrings() {
-		facets, err := New(f.vals)
+		facets, err := NNew(f.vals)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -73,7 +73,7 @@ func TestFilterVals(t *testing.T) {
 		//}
 		//println(facets.Len())
 
-		facets, err = New(f.vals.Encode())
+		facets, err = NNew(f.vals.Encode())
 		if err != nil {
 			t.Fatal(err)
 		}

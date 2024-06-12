@@ -11,7 +11,7 @@ import (
 type Token struct {
 	Value    string `json:"value"`
 	Label    string `json:"label"`
-	Children *Field
+	Children *Fieldz
 	bits     *roaring.Bitmap
 }
 

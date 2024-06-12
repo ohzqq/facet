@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func (f *Field) SortTokens() []*Token {
+func (f *Fieldz) SortTokens() []*Token {
 	tokens := f.keywords
 
 	switch f.SortBy {
